@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SupplyOne Dallas — Plant Command Center</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#f7f8fa;--bg2:#eef1f4;--bg3:#dfe2e8;--bg4:#c8cdd0;
+  --panel:#ffffff;--panel-border:#d8dde3;
+  --navy:#002a5c;--navy2:#003594;--navy-light:#1a5bbf;
+  --red:#869397;--red-soft:rgba(134,147,151,0.08);--red-border:rgba(134,147,151,0.35);
+  --orange:#003594;--orange-line:#003594;
+  --green:#0f8a4f;--green-soft:rgba(15,138,79,0.06);--green-border:rgba(15,138,79,0.3);
+  --yellow:#c57d06;--yellow-soft:rgba(197,125,6,0.06);--yellow-border:rgba(197,125,6,0.3);
+  --text:#1a2332;--text2:#3d4555;--text3:#6b7280;--text4:#9ca3af;
+  --silver:#869397;--silver-lt:#a5acaf;--silver-bg:#c8cdd0;
+}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;overflow:hidden;height:100vh;width:100vw}
+
+/* ══════ UPLOAD / CONFIG SCREEN ══════ */
+#uploadScreen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:2rem;background:var(--bg)}
+.logo-area{text-align:center}
+.logo-area h1{font-family:'Oswald',sans-serif;font-size:4.5rem;font-weight:700;letter-spacing:6px;text-transform:uppercase;color:var(--navy)}
+.logo-area h1 b{color:var(--navy2)}
+.logo-area p{font-size:1.3rem;color:var(--silver);margin-top:.4rem;letter-spacing:3px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase}
+
+/* ── Two-mode selector ── */
+.mode-tabs{display:flex;gap:0;border-radius:10px;overflow:hidden;border:2px solid var(--navy);margin-bottom:.5rem}
+.mode-tab{padding:.8rem 2.5rem;font-family:'Barlow Condensed',sans-serif;font-size:1.15rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;background:var(--panel);color:var(--navy);transition:all .25s;border:none;outline:none}
+.mode-tab.active{background:var(--navy);color:#fff}
+.mode-tab:first-child{border-right:1px solid var(--navy)}
+
+/* ── Google Sheets panel ── */
+.gs-panel{display:none;flex-direction:column;align-items:center;gap:1.2rem;width:min(700px,90vw);padding:2.5rem;background:var(--panel);border-radius:14px;border:1px solid var(--panel-border);box-shadow:0 4px 24px rgba(0,42,92,0.06)}
+.gs-panel.active{display:flex}
+.gs-panel h2{font-family:'Oswald',sans-serif;font-size:1.5rem;font-weight:600;color:var(--navy);letter-spacing:2px}
+.gs-steps{width:100%;font-family:'Barlow Condensed',sans-serif;font-size:1rem;color:var(--text2);line-height:1.8}
+.gs-steps ol{padding-left:1.5rem}
+.gs-steps li{margin-bottom:.3rem}
+.gs-steps code{background:var(--bg2);padding:2px 8px;border-radius:4px;font-size:.9rem;color:var(--navy);font-family:monospace}
+.gs-url-row{display:flex;gap:.6rem;width:100%}
+.gs-url-row input{flex:1;padding:.7rem 1rem;border:2px solid var(--bg4);border-radius:8px;font-size:1rem;font-family:'Barlow',sans-serif;color:var(--text);transition:border-color .2s}
+.gs-url-row input:focus{outline:none;border-color:var(--navy2)}
+.gs-url-row input::placeholder{color:var(--text4)}
+.gs-connect-btn{padding:.7rem 2rem;border:none;border-radius:8px;background:var(--navy);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:1.1rem;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.gs-connect-btn:hover{background:var(--navy2);transform:translateY(-1px)}
+.gs-connect-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.gs-status{font-family:'Barlow Condensed',sans-serif;font-size:1rem;font-weight:600;color:var(--green);display:none;align-items:center;gap:.5rem}
+.gs-status .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:livePulse 2s ease infinite}
+.gs-status.error{color:#c8102e}
+.gs-status.error .dot{background:#c8102e}
+
+/* ── File upload panel ── */
+.upload-panel{display:none;flex-direction:column;align-items:center;gap:1.2rem}
+.upload-panel.active{display:flex}
+.upload-box{border:2px dashed var(--bg4);border-radius:14px;padding:3rem 5rem;text-align:center;cursor:pointer;transition:all .3s;background:var(--panel)}
+.upload-box:hover{border-color:var(--navy2);background:rgba(0,53,148,0.03)}
+.upload-box svg{width:56px;height:56px;fill:var(--silver);margin-bottom:1rem}
+.upload-box p{font-size:1.2rem;color:var(--text)}
+.upload-box small{color:var(--text3);font-size:.9rem}
+#fileInput{display:none}
+
+/* ── Shared config row ── */
+.config-panel{display:flex;gap:2rem;align-items:center;font-size:1rem;color:var(--text3);font-family:'Barlow Condensed',sans-serif;flex-wrap:wrap;justify-content:center}
+.config-panel label{display:flex;align-items:center;gap:.5rem}
+.config-panel input[type="number"]{width:65px;padding:5px 8px;border-radius:6px;border:1px solid var(--bg4);background:var(--panel);color:var(--text);font-size:1rem;text-align:center;font-family:inherit}
+.config-panel select{padding:5px 10px;border-radius:6px;border:1px solid var(--bg4);background:var(--panel);color:var(--text);font-size:1rem;font-family:inherit}
+.watch-btn{padding:8px 20px;border-radius:8px;border:1px solid var(--navy);background:var(--panel);color:var(--navy);cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:1rem;transition:all .3s}
+.watch-btn:hover{background:var(--navy);color:#fff}
+.fullscreen-btn{padding:8px 20px;border-radius:8px;border:1px solid var(--navy2);background:var(--navy2);color:#fff;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:1rem;transition:all .3s;font-weight:600}
+.fullscreen-btn:hover{background:var(--navy)}
+.watch-status{font-size:.85rem;color:var(--green);display:none;font-weight:600}
+.saved-tag{font-size:.8rem;color:var(--green);font-weight:600;display:none}
+
+/* ══════ DASHBOARD ══════ */
+#dashboard{display:none;height:100vh;flex-direction:column;background:var(--bg)}
+#dashboard.active{display:flex}
+.hdr{display:flex;align-items:center;padding:0 2vw;height:6.5vh;flex-shrink:0;background:var(--navy);color:#fff;position:relative}
+.hdr::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:linear-gradient(90deg,var(--silver),var(--silver-lt),var(--silver))}
+.hdr-brand{font-family:'Oswald',sans-serif;font-size:clamp(1rem,1.8vw,1.6rem);font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#fff}
+.hdr-brand b{color:var(--silver-lt)}
+.hdr-center{flex:1;text-align:center}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:clamp(1.3rem,2.6vw,2.4rem);font-weight:600;letter-spacing:3px;color:#fff}
+.hdr-right{display:flex;align-items:center;gap:1.5rem;flex-shrink:0}
+.hdr-clock{font-family:'Barlow Condensed',sans-serif;font-size:clamp(1rem,1.7vw,1.5rem);font-weight:700;color:#fff}
+.hdr-shift-badge{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.7rem,1.1vw,.95rem);padding:3px 14px;border-radius:4px;background:rgba(255,255,255,0.15);letter-spacing:1px;font-weight:600;color:#fff}
+.hdr-date{font-size:clamp(.8rem,1.3vw,1.05rem);color:rgba(255,255,255,0.7);font-family:'Barlow Condensed',sans-serif}
+.mbar{display:flex;align-items:center;justify-content:space-between;padding:0 2vw;height:4.2vh;flex-shrink:0;background:var(--silver);color:#fff}
+.mbar-name{font-family:'Oswald',sans-serif;font-size:clamp(1rem,1.8vw,1.5rem);font-weight:600;letter-spacing:2px}
+.mbar-nav{display:flex;align-items:center;gap:1.2rem}
+.mbar-dots{display:flex;gap:6px}
+.mbar-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.3);transition:all .35s;cursor:pointer}
+.mbar-dot.active{background:#fff;box-shadow:0 0 6px rgba(255,255,255,0.6);transform:scale(1.4)}
+.progress-wrap{width:100px;height:3px;background:rgba(255,255,255,0.2);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:#fff;width:0%;transition:width .1s linear}
+.mbar-oee{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.85rem,1.3vw,1.15rem);font-weight:700;display:flex;align-items:center;gap:.5rem}
+.mbar-oee span{font-family:'Oswald',sans-serif;font-size:clamp(1.1rem,1.7vw,1.5rem)}
+.alert-banner{display:none;align-items:center;gap:1rem;padding:0 2vw;height:3.2vh;flex-shrink:0;background:var(--yellow-soft);border-bottom:2px solid var(--yellow-border);overflow:hidden}
+.alert-banner.active{display:flex}
+.alert-banner.critical{background:rgba(200,16,46,0.06);border-bottom-color:rgba(200,16,46,0.25)}
+.alert-icon{font-size:1.3rem;animation:alertPulse 2s ease infinite}
+.alert-text{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.8rem,1.3vw,1.1rem);color:var(--yellow);animation:alertScroll 14s linear infinite;white-space:nowrap;font-weight:700}
+.alert-banner.critical .alert-text{color:#c8102e}
+@keyframes alertPulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes alertScroll{0%{transform:translateX(100vw)}100%{transform:translateX(-100%)}}
+
+/* ══════ PAGES ══════ */
+.page{display:none;flex:1;flex-direction:column;min-height:0}
+.page.active{display:flex}
+
+/* ══════ SCOREBOARD CARDS ══════ */
+.sb-container{flex:1;display:flex;flex-direction:column;gap:1.2vh;padding:1.2vh 2.5vw;min-height:0}
+.sb-card{flex:1;background:var(--panel);border-radius:12px;border-left:8px solid var(--text4);
+  box-shadow:0 2px 8px rgba(0,0,0,0.05);display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr 1fr;
+  align-items:center;padding:0 2.5vw;gap:0;overflow:hidden;cursor:pointer;
+  transition:box-shadow .3s,transform .3s}
+.sb-card:hover{box-shadow:0 4px 20px rgba(0,42,92,0.12);transform:translateX(4px)}
+.sb-card.good{border-left-color:var(--green)}
+.sb-card.warn{border-left-color:var(--yellow)}
+.sb-card.bad{border-left-color:#c8102e}
+.sb-id{display:flex;flex-direction:column;justify-content:center;gap:.3vh}
+.sb-name{font-family:'Oswald',sans-serif;font-size:clamp(1.5rem,3vw,2.8rem);font-weight:700;color:var(--navy);letter-spacing:1px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-oee-row{display:flex;align-items:center;gap:.8rem}
+.sb-oee-label{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.9rem,1.5vw,1.3rem);color:var(--text3);font-weight:600;letter-spacing:1px}
+.sb-oee-val{font-family:'Oswald',sans-serif;font-size:clamp(1.4rem,2.5vw,2.2rem);font-weight:700;line-height:1}
+.sb-oee-bar{width:clamp(50px,6vw,100px);height:10px;background:var(--bg3);border-radius:5px;overflow:hidden}
+.sb-oee-fill{height:100%;border-radius:5px;transition:width 1s ease}
+.sb-alert-tag{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.75rem,1.2vw,1rem);font-weight:700;color:var(--yellow);letter-spacing:.5px;margin-top:.15vh}
+.sb-metric{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;border-left:1px solid var(--bg3);padding:1vh 0;height:100%}
+.sb-metric-label{font-family:'Barlow Condensed',sans-serif;font-size:clamp(1rem,1.6vw,1.5rem);font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.3vh}
+.sb-metric-val{font-family:'Oswald',sans-serif;font-size:clamp(2.8rem,5.5vw,5rem);font-weight:700;line-height:1;letter-spacing:-1px}
+.sb-metric-target{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.8rem,1.3vw,1.15rem);font-weight:600;margin-top:.2vh;letter-spacing:.5px}
+.sb-metric-target.good{color:var(--green)}
+.sb-metric-target.bad{color:#c8102e}
+.sb-page-ind{text-align:center;padding:.4vh 0;font-family:'Barlow Condensed',sans-serif;font-size:clamp(.8rem,1.3vw,1.1rem);color:var(--text4);letter-spacing:3px;font-weight:600;flex-shrink:0}
+
+/* ══════ MACHINE DETAIL ══════ */
+.detail-body{flex:1;display:grid;grid-template-columns:1fr 1fr;gap:.8vw;padding:.5vh 1.2vw;min-height:0}
+.shift-col{display:flex;flex-direction:column;gap:.4vh;min-height:0}
+.shift-label{font-family:'Oswald',sans-serif;font-size:clamp(.9rem,1.4vw,1.2rem);font-weight:600;letter-spacing:2px;text-align:center;padding:.4vh 0;border-radius:4px;color:#fff}
+.shift-label.s1{background:var(--navy)}
+.shift-label.s2{background:var(--silver)}
+.chart-panel{background:var(--panel);border-radius:6px;padding:.35vh .7vw;display:flex;flex-direction:column;flex:1;min-height:0;border:1px solid var(--panel-border)}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:0 .2vw;margin-bottom:.1vh}
+.chart-badge{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.55rem,.9vw,.75rem);font-weight:700;padding:1px 9px;border-radius:3px;color:#fff}
+.chart-badge.s1{background:var(--navy)}
+.chart-badge.s2{background:var(--silver)}
+.chart-ttl{font-family:'Oswald',sans-serif;font-size:clamp(.75rem,1.25vw,1.05rem);font-weight:600;letter-spacing:1px;color:var(--navy)}
+.chart-kpi{display:flex;align-items:center;gap:.3rem}
+.chart-kpi-val{font-family:'Oswald',sans-serif;font-size:clamp(.8rem,1.25vw,1.05rem);font-weight:700}
+.chart-kpi-arrow{font-size:.75em;font-weight:900}
+.chart-kpi-arrow.good{color:var(--green)}
+.chart-kpi-arrow.bad{color:#c8102e}
+.chart-wrap{flex:1;min-height:0;position:relative}
+.chart-wrap canvas{position:absolute;top:0;left:0;width:100%!important;height:100%!important}
+.panel-hit{border-color:var(--green-border);background:linear-gradient(180deg,rgba(15,138,79,0.03),var(--panel))}
+.panel-miss{border-color:rgba(200,16,46,0.2);background:linear-gradient(180deg,rgba(200,16,46,0.02),var(--panel))}
+
+/* Footer */
+.ftr{display:flex;align-items:center;justify-content:space-between;padding:0 2vw;height:3vh;flex-shrink:0;background:var(--panel);border-top:1px solid var(--panel-border)}
+.ftr-targets{display:flex;gap:2.5rem;font-family:'Barlow Condensed',sans-serif;font-size:clamp(.65rem,1vw,.85rem);color:var(--text3);font-weight:600}
+.ftr-targets span{color:var(--navy2);font-weight:700}
+.ftr-live{font-family:'Barlow Condensed',sans-serif;font-size:clamp(.55rem,.85vw,.72rem);color:var(--text4);display:flex;align-items:center;gap:.5rem}
+.ftr-live .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:livePulse 2s ease infinite}
+.ftr-live.error .pulse{background:#c8102e;animation:none}
+.ftr-live.error{color:#c8102e}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 0 0 var(--green-border)}50%{opacity:.5;box-shadow:0 0 0 4px transparent}}
+
+/* Controls (appear on hover) */
+.ctrl{position:fixed;bottom:10px;right:10px;display:flex;gap:6px;z-index:100;opacity:0;transition:opacity .3s}
+body:hover .ctrl{opacity:1}
+.ctrl button{background:var(--navy);border:none;color:#fff;padding:5px 14px;border-radius:5px;cursor:pointer;font-size:.8rem;font-family:'Barlow Condensed',sans-serif;transition:all .2s}
+.ctrl button:hover{background:var(--navy2)}
+
+.fade-in{animation:fadeIn .4s ease forwards}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+/* ══════ LOADING OVERLAY ══════ */
+.loading-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(247,248,250,0.92);display:none;align-items:center;justify-content:center;z-index:200;flex-direction:column;gap:1.5rem}
+.loading-overlay.active{display:flex}
+.loading-spinner{width:60px;height:60px;border:5px solid var(--bg3);border-top:5px solid var(--navy);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:'Barlow Condensed',sans-serif;font-size:1.3rem;color:var(--navy);font-weight:600;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<!-- ════════════════ LOADING ════════════════ -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">Fetching data from Google Sheets...</div>
+</div>
+
+<!-- ════════════════ CONFIG SCREEN ════════════════ -->
+<div id="uploadScreen">
+  <div class="logo-area">
+    <h1>SUPPLY<b>ONE</b></h1>
+    <p>Dallas &mdash; Plant Command Center</p>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" onclick="switchMode('sheets')" id="tabSheets">&#9729; Google Sheets (Live)</button>
+    <button class="mode-tab" onclick="switchMode('file')" id="tabFile">&#128193; File Upload</button>
+  </div>
+
+  <!-- ── Google Sheets Mode ── -->
+  <div class="gs-panel active" id="gsPanel">
+    <h2>CONNECT TO GOOGLE SHEETS</h2>
+    <div class="gs-steps">
+      <ol>
+        <li>Open your Dallas Metrics spreadsheet in <b>Google Sheets</b></li>
+        <li>Go to <code>File → Share → Publish to web</code></li>
+        <li>Select <b>"Entire Document"</b> and format <b>".xlsx"</b></li>
+        <li>Click <b>Publish</b>, then paste the URL below</li>
+      </ol>
+    </div>
+    <div class="gs-url-row">
+      <input type="text" id="gsUrl" placeholder="Paste published Google Sheets URL here..." />
+      <button class="gs-connect-btn" id="gsConnectBtn" onclick="connectGoogleSheets()">CONNECT &amp; GO LIVE</button>
+    </div>
+    <div class="gs-status" id="gsStatus"><div class="dot"></div> <span id="gsStatusText">Connected — auto-refreshing</span></div>
+    <span class="saved-tag" id="savedTag">&#10003; URL saved — will auto-load next time</span>
+  </div>
+
+  <!-- ── File Upload Mode ── -->
+  <div class="upload-panel" id="filePanel">
+    <div class="upload-box" onclick="document.getElementById('fileInput').click()" id="uploadBox">
+      <svg viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,15.01L10,17L11,16V20H13V16L14,17L16,15L12,11L8,15.01Z"/></svg>
+      <p>Drop or click to upload Metrics spreadsheet</p><small>.xlsx &bull; Dallas Monthly Metrics format</small>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls"/>
+  </div>
+
+  <!-- ── Shared config ── -->
+  <div class="config-panel">
+    <label>Rotate every <input type="number" id="cfgInterval" value="15" min="5" max="120"> sec</label>
+    <label>Poll every <input type="number" id="cfgPoll" value="5" min="1" max="60"> min</label>
+    <button class="fullscreen-btn" onclick="goFullscreen()">&#9974; TV FULLSCREEN</button>
+  </div>
+</div>
+
+<!-- ════════════════ DASHBOARD ════════════════ -->
+<div id="dashboard">
+  <div class="hdr">
+    <div class="hdr-brand">SUPPLY<b>ONE</b></div>
+    <div class="hdr-center"><div class="hdr-title" id="pageTitle">PLANT SCOREBOARD</div></div>
+    <div class="hdr-right">
+      <div class="hdr-shift-badge" id="shiftBadge">1ST SHIFT</div>
+      <div class="hdr-clock" id="clock"></div>
+      <div class="hdr-date" id="hdrDate"></div>
+    </div>
+  </div>
+  <div class="mbar" id="machineBar" style="display:none">
+    <div class="mbar-name" id="mbarName"></div>
+    <div class="mbar-oee">OEE: <span id="mbarOEE">—</span>%</div>
+    <div class="mbar-nav"><div class="mbar-dots" id="mbarDots"></div><div class="progress-wrap"><div class="progress-fill" id="progressBar"></div></div></div>
+  </div>
+  <div class="alert-banner" id="alertBanner"><span class="alert-icon">&#9888;</span><span class="alert-text" id="alertText"></span></div>
+  <div class="page" id="pageLB"><div class="sb-container" id="sbContainer"></div></div>
+  <div class="page" id="pageDetail"><div class="detail-body" id="detailBody"></div></div>
+  <div class="ftr">
+    <div class="ftr-targets">
+      <div>Setup Target: <span>20.00 min</span></div>
+      <div>Feeds/Run Hr Target: <span>3,000</span></div>
+      <div>Feeds/Sch Hr Target: <span>2,000</span></div>
+      <div>Downtime Target: <span>15%</span></div>
+    </div>
+    <div class="ftr-live" id="ftrLive" style="display:none"><div class="pulse"></div><span id="ftrLiveText">Live — Google Sheets</span></div>
+  </div>
+</div>
+
+<!-- ── Controls (hover) ── -->
+<div class="ctrl">
+  <button onclick="prevPage()">&#9664; Prev</button>
+  <button id="pauseBtn" onclick="togglePause()">&#10074;&#10074;</button>
+  <button onclick="nextPage()">Next &#9654;</button>
+  <button onclick="goFullscreen()" title="Fullscreen">&#9974;</button>
+  <button onclick="returnToConfig()" title="Settings">&#9881;</button>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// GLOBALS
+// ══════════════════════════════════════════════════════════════
+let allMachines=[], pages=[], currentPageIdx=0;
+let rotateTimer=null, progressTimer=null, isPaused=false, rotateMs=15000;
+let charts=[];
+let dirHandle=null, lastFileTime=0, pollTimer=null;
+let gsUrl = '', gsPollTimer = null, gsLastHash = '';
+let wakeLock = null;
+const SB_PER_PAGE = 2;
+const TARGETS = { setupMin:20.00, feedRunHr:3000, feedsSchHr:2000, downtime:15 };
+const LS_KEY = 'supplyone_dallas_gs_url';
+const LS_CFG = 'supplyone_dallas_cfg';
+
+// ══════════════════════════════════════════════════════════════
+// INIT — Auto-load saved config
+// ══════════════════════════════════════════════════════════════
+(function init(){
+  // Restore saved settings
+  try {
+    const cfg = JSON.parse(localStorage.getItem(LS_CFG) || '{}');
+    if(cfg.interval) document.getElementById('cfgInterval').value = cfg.interval;
+    if(cfg.poll) document.getElementById('cfgPoll').value = cfg.poll;
+  } catch(e){}
+
+  // Auto-connect if URL saved
+  const saved = localStorage.getItem(LS_KEY);
+  if(saved){
+    document.getElementById('gsUrl').value = saved;
+    document.getElementById('savedTag').style.display = 'inline';
+    // Auto-start if URL param says so
+    const params = new URLSearchParams(window.location.search);
+    if(params.get('autostart') === '1'){
+      setTimeout(() => connectGoogleSheets(), 500);
+    }
+  }
+})();
+
+// ══════════════════════════════════════════════════════════════
+// MODE SWITCHING
+// ══════════════════════════════════════════════════════════════
+function switchMode(mode){
+  document.getElementById('tabSheets').classList.toggle('active', mode==='sheets');
+  document.getElementById('tabFile').classList.toggle('active', mode==='file');
+  document.getElementById('gsPanel').classList.toggle('active', mode==='sheets');
+  document.getElementById('filePanel').classList.toggle('active', mode==='file');
+}
+
+// ══════════════════════════════════════════════════════════════
+// GOOGLE SHEETS — CONNECT & FETCH
+// ══════════════════════════════════════════════════════════════
+function normalizeGsUrl(raw){
+  // Accept various Google Sheets URL formats, always produce xlsx export
+  raw = raw.trim();
+  // Already a publish export URL
+  if(raw.includes('/pub') && raw.includes('output=xlsx')) return raw;
+  // Extract sheet ID from any Google Sheets URL
+  const m = raw.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(m){
+    return `https://docs.google.com/spreadsheets/d/${m[1]}/export?format=xlsx`;
+  }
+  // If it looks like just an ID
+  if(/^[a-zA-Z0-9_-]{20,}$/.test(raw)){
+    return `https://docs.google.com/spreadsheets/d/${raw}/export?format=xlsx`;
+  }
+  // Return as-is (user may have a custom endpoint)
+  return raw;
+}
+
+async function connectGoogleSheets(){
+  const rawUrl = document.getElementById('gsUrl').value.trim();
+  if(!rawUrl){ alert('Paste a Google Sheets URL first.'); return; }
+
+  gsUrl = normalizeGsUrl(rawUrl);
+  const btn = document.getElementById('gsConnectBtn');
+  const status = document.getElementById('gsStatus');
+  btn.disabled = true;
+  btn.textContent = 'CONNECTING...';
+  showLoading('Fetching data from Google Sheets...');
+
+  try {
+    const data = await fetchXlsxFromUrl(gsUrl);
+    const wb = XLSX.read(data, {type:'array'});
+    processWorkbook(wb);
+
+    // Save URL for next time
+    localStorage.setItem(LS_KEY, rawUrl);
+    saveConfig();
+    document.getElementById('savedTag').style.display = 'inline';
+
+    // Show live status
+    status.style.display = 'flex';
+    status.classList.remove('error');
+    document.getElementById('gsStatusText').textContent = 'Connected — auto-refreshing';
+
+    // Start polling
+    startGsPolling();
+
+    // Show live indicator in footer
+    const ftr = document.getElementById('ftrLive');
+    ftr.style.display = 'flex';
+    ftr.classList.remove('error');
+    updateFtrLive('Live — Google Sheets');
+
+    hideLoading();
+    requestWakeLock();
+
+  } catch(err){
+    hideLoading();
+    status.style.display = 'flex';
+    status.classList.add('error');
+    document.getElementById('gsStatusText').textContent = 'Failed — ' + (err.message || 'Check URL and try again');
+    console.error('GS fetch error:', err);
+  }
+  btn.disabled = false;
+  btn.textContent = 'CONNECT & GO LIVE';
+}
+
+async function fetchXlsxFromUrl(url){
+  // Use a CORS proxy for Google Sheets exports
+  // Google's export URLs support direct fetch from same-origin,
+  // but from a local file:// or different origin, a proxy may be needed.
+  // Try direct first, fall back to proxy.
+  try {
+    const resp = await fetch(url, {redirect:'follow'});
+    if(!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    return new Uint8Array(await resp.arrayBuffer());
+  } catch(directErr){
+    console.warn('Direct fetch failed, trying with CORS proxy...', directErr);
+    // Try allorigins proxy
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+    const resp2 = await fetch(proxyUrl);
+    if(!resp2.ok) throw new Error(`Proxy fetch failed: HTTP ${resp2.status}`);
+    return new Uint8Array(await resp2.arrayBuffer());
+  }
+}
+
+function startGsPolling(){
+  if(gsPollTimer) clearInterval(gsPollTimer);
+  const mins = parseInt(document.getElementById('cfgPoll').value || 5);
+  gsPollTimer = setInterval(() => refreshFromGoogleSheets(), mins * 60000);
+  console.log(`GS polling started: every ${mins} min`);
+}
+
+async function refreshFromGoogleSheets(){
+  if(!gsUrl) return;
+  try {
+    const data = await fetchXlsxFromUrl(gsUrl);
+    // Quick hash to check if data changed
+    const hash = simpleHash(data);
+    if(hash === gsLastHash){
+      updateFtrLive(`Live — No changes — ${new Date().toLocaleTimeString()}`);
+      return;
+    }
+    gsLastHash = hash;
+
+    const wb = XLSX.read(data, {type:'array'});
+    const saved = currentPageIdx;
+    allMachines = [];
+    const machineSheets = detectMachineSheets(wb);
+    machineSheets.forEach(cfg => {
+      const m = parseMachine(wb.Sheets[cfg.sheet], cfg);
+      if(m) allMachines.push(m);
+    });
+    if(allMachines.length){
+      buildPages();
+      showPage(Math.min(saved, pages.length-1));
+      if(!isPaused) startRotation();
+    }
+
+    document.getElementById('ftrLive').classList.remove('error');
+    updateFtrLive(`Updated: ${new Date().toLocaleTimeString()}`);
+    console.log('GS refresh: data updated');
+  } catch(err){
+    console.warn('GS refresh error:', err);
+    document.getElementById('ftrLive').classList.add('error');
+    updateFtrLive(`Refresh failed — retrying — ${new Date().toLocaleTimeString()}`);
+  }
+}
+
+function simpleHash(arr){
+  let h = 0;
+  const step = Math.max(1, Math.floor(arr.length / 500));
+  for(let i = 0; i < arr.length; i += step){
+    h = ((h << 5) - h + arr[i]) | 0;
+  }
+  return h.toString(36);
+}
+
+function updateFtrLive(text){
+  document.getElementById('ftrLiveText').textContent = text;
+}
+
+function saveConfig(){
+  try {
+    localStorage.setItem(LS_CFG, JSON.stringify({
+      interval: document.getElementById('cfgInterval').value,
+      poll: document.getElementById('cfgPoll').value
+    }));
+  } catch(e){}
+}
+
+// ══════════════════════════════════════════════════════════════
+// FULLSCREEN & WAKE LOCK (TV Mode)
+// ══════════════════════════════════════════════════════════════
+function goFullscreen(){
+  const el = document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if(el.msRequestFullscreen) el.msRequestFullscreen();
+  requestWakeLock();
+}
+
+async function requestWakeLock(){
+  try {
+    if('wakeLock' in navigator){
+      wakeLock = await navigator.wakeLock.request('screen');
+      console.log('Wake lock acquired — screen will stay on');
+      wakeLock.addEventListener('release', () => console.log('Wake lock released'));
+    }
+  } catch(e){ console.log('Wake lock not supported or denied'); }
+}
+
+// Re-acquire wake lock when page becomes visible again
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && gsUrl) requestWakeLock();
+});
+
+function returnToConfig(){
+  // Go back to setup screen
+  clearTimers();
+  if(gsPollTimer) clearInterval(gsPollTimer);
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('uploadScreen').style.display = 'flex';
+}
+
+function showLoading(msg){
+  document.getElementById('loadingText').textContent = msg || 'Loading...';
+  document.getElementById('loadingOverlay').classList.add('active');
+}
+function hideLoading(){
+  document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// ══════════════════════════════════════════════════════════════
+// CLOCK
+// ══════════════════════════════════════════════════════════════
+function updateClock(){
+  const now=new Date(), h=now.getHours(), m=now.getMinutes();
+  document.getElementById('clock').textContent=`${h%12||12}:${String(m).padStart(2,'0')} ${h>=12?'PM':'AM'}`;
+  let s='1ST SHIFT'; if(h>=14&&h<22)s='2ND SHIFT'; else if(h>=22||h<6)s='3RD SHIFT';
+  document.getElementById('shiftBadge').textContent=s;
+}
+setInterval(updateClock,10000); updateClock();
+
+// ══════════════════════════════════════════════════════════════
+// CELL READER
+// ══════════════════════════════════════════════════════════════
+function cell(ws, ref){
+  const c = ws[ref];
+  return (c && c.v != null) ? c.v : null;
+}
+function cellNum(ws, ref){
+  const v = cell(ws, ref);
+  return (typeof v === 'number' && isFinite(v)) ? v : 0;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FORMATTERS
+// ══════════════════════════════════════════════════════════════
+function fmtInt(v){ return Math.round(v); }
+function fmtPct(v){ return Math.round(v * 1000) / 10; }
+
+// ══════════════════════════════════════════════════════════════
+// KPI COMPUTATION
+// ══════════════════════════════════════════════════════════════
+function kpisFromRow(ws, row){
+  const D = cellNum(ws, 'D'+row);
+  const F = cellNum(ws, 'F'+row);
+  const L = cellNum(ws, 'L'+row);
+  const M = cellNum(ws, 'M'+row);
+  const N = cellNum(ws, 'N'+row);
+  const O = cellNum(ws, 'O'+row);
+  const P = cellNum(ws, 'P'+row);
+  return {
+    su:  (F > 0) ? fmtInt((L * 60) / F)  : 0,
+    frh: (M > 0) ? fmtInt(D / M)          : 0,
+    fsh: (P > 0) ? fmtInt(D / P)          : 0,
+    dt:  (P > 0) ? fmtPct((N + O) / P)    : 0,
+  };
+}
+
+function kpisForTable(ws, level){
+  if(level === 'shift1'){
+    if(cellNum(ws, 'M34') > 0 || cellNum(ws, 'P34') > 0) return kpisFromRow(ws, 34);
+    if(cellNum(ws, 'M33') > 0 || cellNum(ws, 'P33') > 0) return kpisFromRow(ws, 33);
+    return kpisFromRow(ws, 34);
+  } else if(level === 'shift2'){
+    if(cellNum(ws, 'M66') > 0 || cellNum(ws, 'P66') > 0) return kpisFromRow(ws, 66);
+    if(cellNum(ws, 'M65') > 0 || cellNum(ws, 'P65') > 0) return kpisFromRow(ws, 65);
+    return kpisFromRow(ws, 66);
+  } else {
+    if(cellNum(ws, 'M72') > 0 || cellNum(ws, 'P72') > 0) return kpisFromRow(ws, 72);
+    if(cellNum(ws, 'M71') > 0 || cellNum(ws, 'P71') > 0) return kpisFromRow(ws, 71);
+    return kpisForTable(ws, 'shift1');
+  }
+}
+
+function kpisForDay(ws, rowNum){
+  const D = cellNum(ws, 'D'+rowNum);
+  const F = cellNum(ws, 'F'+rowNum);
+  const L = cellNum(ws, 'L'+rowNum);
+  const M = cellNum(ws, 'M'+rowNum);
+  const N = cellNum(ws, 'N'+rowNum);
+  const O = cellNum(ws, 'O'+rowNum);
+  const P = cellNum(ws, 'P'+rowNum);
+  return {
+    su:  (F > 0 && L > 0) ? fmtInt((L * 60) / F) : 0,
+    frh: (M > 0) ? fmtInt(D / M)                   : 0,
+    fsh: (P > 0) ? fmtInt(D / P)                   : 0,
+    dt:  (P > 0) ? fmtPct((N + O) / P)             : 0,
+    hasData: (D > 0 || M > 0 || P > 0),
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// DETECT MACHINE SHEETS
+// ══════════════════════════════════════════════════════════════
+function detectMachineSheets(wb){
+  const sheets = [];
+  wb.SheetNames.forEach(name => {
+    const ws = wb.Sheets[name];
+    const a4 = cell(ws, 'A4');
+    if(a4 && typeof a4 === 'string' && a4.includes('Production Efficiency')){
+      const shortMatch = name.match(/^(\d+)/);
+      const short = shortMatch ? shortMatch[1] : name.substring(0,4);
+      sheets.push({ sheet: name, name: name, short: short });
+    }
+  });
+  return sheets;
+}
+
+// ══════════════════════════════════════════════════════════════
+// EXTRACT DAILY DATA
+// ══════════════════════════════════════════════════════════════
+function extractDaily(ws, excelStartRow, label){
+  const dates=[], setupMin=[], feedRunHr=[], feedsSchHr=[], downtime=[], oeeData=[];
+  for(let row = excelStartRow; row < excelStartRow + 22; row++){
+    const dv = cell(ws, 'A'+row);
+    if(dv == null) continue;
+    let ds;
+    if(typeof dv === 'number'){
+      const d = XLSX.SSF.parse_date_code(dv);
+      ds = `${d.m}/${d.d}`;
+    } else if(typeof dv === 'string'){
+      const trimmed = dv.trim();
+      const parts = trimmed.match(/(\d{1,2})[\/\.\-](\d{1,2})/);
+      if(!parts) continue;
+      ds = `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+    } else continue;
+
+    const kpi = kpisForDay(ws, row);
+    if(!kpi.hasData) continue;
+
+    dates.push(ds);
+    setupMin.push(kpi.su);
+    feedRunHr.push(kpi.frh);
+    feedsSchHr.push(kpi.fsh);
+    downtime.push(kpi.dt);
+
+    const util  = cellNum(ws, 'R'+row);
+    const eff   = cellNum(ws, 'U'+row);
+    const waste = cellNum(ws, 'H'+row);
+    const D     = cellNum(ws, 'D'+row);
+    oeeData.push({ avail:util, perf:eff, quality:(D>0 ? Math.max(0, 1 - waste/D) : 1) });
+  }
+  if(!dates.length) return null;
+
+  const valid = oeeData.filter(o => o.avail > 0 && o.perf > 0);
+  let oee = 0;
+  if(valid.length){
+    const aAvg = valid.reduce((s,o)=>s+o.avail,0) / valid.length;
+    const pAvg = valid.reduce((s,o)=>s+o.perf,0)  / valid.length;
+    const qAvg = valid.reduce((s,o)=>s+o.quality,0)/ valid.length;
+    oee = Math.round(aAvg * pAvg * qAvg * 1000) / 10;
+  }
+
+  return { shift:label, dates, setupMin, feedRunHr, feedsSchHr, downtime, oee };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PARSE MACHINE
+// ══════════════════════════════════════════════════════════════
+function parseMachine(ws, cfg){
+  const combined = kpisForTable(ws, 'combined');
+  const s1kpi    = kpisForTable(ws, 'shift1');
+  const s2kpi    = kpisForTable(ws, 'shift2');
+
+  const shifts = [];
+  const s1 = extractDaily(ws, 11, '1st');
+  if(s1){ s1.kpi = s1kpi; shifts.push(s1); }
+  const s2 = extractDaily(ws, 43, '2nd');
+  if(s2){ s2.kpi = s2kpi; shifts.push(s2); }
+
+  if(!shifts.length) return null;
+
+  const oeeAvg = shifts.reduce((s,sh) => s + sh.oee, 0) / shifts.length;
+
+  const alerts = [];
+  shifts.forEach(sh => {
+    let dtRun=0, maxRun=0;
+    sh.downtime.forEach(v => {
+      if(v > 0 && v > TARGETS.downtime){ dtRun++; maxRun = Math.max(maxRun, dtRun); }
+      else dtRun = 0;
+    });
+    if(maxRun >= 3) alerts.push(`${sh.shift} Shift: DT above ${TARGETS.downtime}% for ${maxRun}+ days`);
+    const suNZ = sh.setupMin.filter(v => v > 0);
+    if(suNZ.length >= 3 && suNZ.slice(-3).every(v => v > TARGETS.setupMin))
+      alerts.push(`${sh.shift} Shift: Setup above target 3+ days`);
+  });
+
+  return {
+    name: cfg.name, short: cfg.short, shifts,
+    oee: Math.round(oeeAvg * 10) / 10,
+    alerts, combined
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// PROCESS WORKBOOK
+// ══════════════════════════════════════════════════════════════
+function processWorkbook(wb){
+  allMachines = [];
+  const machineSheets = detectMachineSheets(wb);
+  machineSheets.forEach(cfg => {
+    const m = parseMachine(wb.Sheets[cfg.sheet], cfg);
+    if(m) allMachines.push(m);
+  });
+  if(!allMachines.length){ alert('No machine data found. Check spreadsheet format.'); return; }
+  rotateMs = parseInt(document.getElementById('cfgInterval').value || 15) * 1000;
+  const now = new Date();
+  document.getElementById('hdrDate').textContent = `(${now.getMonth()+1}/${now.getDate()}/${now.getFullYear()})`;
+  buildPages();
+  document.getElementById('uploadScreen').style.display = 'none';
+  document.getElementById('dashboard').classList.add('active');
+  currentPageIdx = 0; showPage(0); startRotation();
+}
+
+// ══════════════════════════════════════════════════════════════
+// PAGE MANAGEMENT
+// ══════════════════════════════════════════════════════════════
+function buildPages(){
+  pages = [];
+  const n = Math.ceil(allMachines.length / SB_PER_PAGE);
+  for(let i=0; i<n; i++){
+    pages.push({type:'scoreboard', start:i*SB_PER_PAGE, end:Math.min((i+1)*SB_PER_PAGE, allMachines.length), pg:i+1, total:n});
+  }
+  allMachines.forEach((m,i) => pages.push({type:'machine', machineIdx:i}));
+  const dots = document.getElementById('mbarDots');
+  dots.innerHTML = pages.map((p,i) => {
+    const t = p.type==='scoreboard' ? `Scoreboard ${p.pg}` : allMachines[p.machineIdx].name;
+    return `<div class="mbar-dot" title="${t}" onclick="goToPage(${i})"></div>`;
+  }).join('');
+}
+
+function showPage(idx){
+  currentPageIdx = idx;
+  const page = pages[idx];
+  document.querySelectorAll('.mbar-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+  document.getElementById('pageLB').classList.remove('active');
+  document.getElementById('pageDetail').classList.remove('active');
+  charts.forEach(c => c.destroy()); charts = [];
+
+  if(page.type === 'scoreboard'){
+    document.getElementById('pageTitle').textContent = 'PLANT SCOREBOARD';
+    document.getElementById('machineBar').style.display = 'none';
+    document.getElementById('alertBanner').classList.remove('active');
+    renderScoreboard(page.start, page.end, page.pg, page.total);
+    document.getElementById('pageLB').classList.add('active');
+  } else {
+    const m = allMachines[page.machineIdx];
+    document.getElementById('pageTitle').textContent = 'MACHINE DETAIL \u2014 HEAD TO HEAD';
+    document.getElementById('machineBar').style.display = 'flex';
+    document.getElementById('mbarName').textContent = m.name;
+    document.getElementById('mbarOEE').textContent = m.oee;
+    if(m.alerts.length){
+      document.getElementById('alertBanner').classList.add('active');
+      document.getElementById('alertBanner').classList.toggle('critical', m.alerts.some(a=>a.includes('DT above')));
+      document.getElementById('alertText').textContent = '\u26A0 ' + m.alerts.join('   \u25CF   \u26A0 ');
+    } else {
+      document.getElementById('alertBanner').classList.remove('active');
+    }
+    renderMachineDetail(m);
+    document.getElementById('pageDetail').classList.add('active');
+  }
+}
+
+function goToPage(i){ clearTimers(); showPage(i); startRotation(); }
+function nextPage(){ clearTimers(); currentPageIdx=(currentPageIdx+1)%pages.length; showPage(currentPageIdx); startRotation(); }
+function prevPage(){ clearTimers(); currentPageIdx=(currentPageIdx-1+pages.length)%pages.length; showPage(currentPageIdx); startRotation(); }
+
+// ══════════════════════════════════════════════════════════════
+// SCOREBOARD
+// ══════════════════════════════════════════════════════════════
+function renderScoreboard(start, end, pg, total){
+  const container = document.getElementById('sbContainer');
+  container.innerHTML = '';
+
+  const slice = allMachines.slice(start, end);
+  slice.forEach((m, li) => {
+    const gi = start + li;
+    const kpi = m.combined;
+
+    let score = 0;
+    if(kpi.su > 0 && kpi.su <= TARGETS.setupMin) score++;
+    if(kpi.dt > 0 && kpi.dt <= TARGETS.downtime) score++;
+    if(kpi.frh > 0 && kpi.frh >= TARGETS.feedRunHr) score++;
+    if(kpi.fsh > 0 && kpi.fsh >= TARGETS.feedsSchHr) score++;
+    let rc = 'warn';
+    if(score >= 3) rc = 'good';
+    else if(score <= 1) rc = 'bad';
+
+    const oc = m.oee>=80 ? 'var(--green)' : m.oee>=60 ? 'var(--yellow)' : '#c8102e';
+
+    const metrics = [
+      { label:'SETUP',      val: kpi.su > 0 ? fmtInt(kpi.su) : '\u2014',
+        hit: kpi.su > 0 && kpi.su <= TARGETS.setupMin,
+        tag: kpi.su <= 0 ? '' : kpi.su <= TARGETS.setupMin ? '\u2713 ON TARGET' : '\u25B2 ABOVE' },
+      { label:'DOWNTIME',   val: kpi.dt > 0 ? kpi.dt+'%' : '\u2014',
+        hit: kpi.dt > 0 && kpi.dt <= TARGETS.downtime,
+        tag: kpi.dt <= 0 ? '' : kpi.dt <= TARGETS.downtime ? '\u2713 ON TARGET' : '\u25B2 ABOVE' },
+      { label:'FEED/RUN HR', val: kpi.frh > 0 ? fmtInt(kpi.frh).toLocaleString() : '\u2014',
+        hit: kpi.frh > 0 && kpi.frh >= TARGETS.feedRunHr,
+        tag: kpi.frh <= 0 ? '' : kpi.frh >= TARGETS.feedRunHr ? '\u2713 ON TARGET' : '\u25BC BELOW' },
+      { label:'FEED/SCH HR', val: kpi.fsh > 0 ? fmtInt(kpi.fsh).toLocaleString() : '\u2014',
+        hit: kpi.fsh > 0 && kpi.fsh >= TARGETS.feedsSchHr,
+        tag: kpi.fsh <= 0 ? '' : kpi.fsh >= TARGETS.feedsSchHr ? '\u2713 ON TARGET' : '\u25BC BELOW' },
+    ];
+
+    let alertHTML = '';
+    if(m.alerts.length) alertHTML = `<div class="sb-alert-tag">\u26A0 ${m.alerts.length} ALERT${m.alerts.length>1?'S':''}</div>`;
+
+    const card = document.createElement('div');
+    card.className = `sb-card ${rc} fade-in`;
+    card.style.animationDelay = `${li * 0.15}s`;
+    card.onclick = () => { const di = pages.findIndex(p => p.type==='machine' && p.machineIdx===gi); if(di>=0) goToPage(di); };
+
+    card.innerHTML = `
+      <div class="sb-id">
+        <div class="sb-name">${m.name}</div>
+        <div class="sb-oee-row">
+          <span class="sb-oee-label">OEE</span>
+          <span class="sb-oee-val" style="color:${oc}">${m.oee}%</span>
+          <div class="sb-oee-bar"><div class="sb-oee-fill" style="width:${Math.min(m.oee,100)}%;background:${oc}"></div></div>
+        </div>
+        ${alertHTML}
+      </div>
+      ${metrics.map(mt => `
+        <div class="sb-metric">
+          <div class="sb-metric-label">${mt.label}</div>
+          <div class="sb-metric-val" style="color:${mt.hit ? 'var(--green)' : 'var(--text)'}">${mt.val}</div>
+          <div class="sb-metric-target ${mt.hit ? 'good' : 'bad'}">${mt.tag}</div>
+        </div>
+      `).join('')}
+    `;
+    container.appendChild(card);
+  });
+
+  if(total > 1){
+    const ind = document.createElement('div');
+    ind.className = 'sb-page-ind';
+    ind.textContent = `SCOREBOARD ${pg} OF ${total}`;
+    container.appendChild(ind);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// MACHINE DETAIL
+// ══════════════════════════════════════════════════════════════
+function renderMachineDetail(machine){
+  const body = document.getElementById('detailBody');
+  body.innerHTML = '';
+
+  const metricDefs = [
+    { key:'setupMin',    kpiKey:'su',  title:'Min/Set Up',     target:TARGETS.setupMin, unit:'',  arrow:'down', fmt: v => v.toFixed ? v.toFixed(0) : v },
+    { key:'downtime',    kpiKey:'dt',  title:'Downtime %',      target:TARGETS.downtime, unit:'%', arrow:'down', fmt: v => v.toFixed ? v.toFixed(1)+'%' : v },
+    { key:'feedRunHr',   kpiKey:'frh', title:'Feeds/Run Hr.',   target:TARGETS.feedRunHr, unit:'',  arrow:'up',   fmt: v => v>=1000 ? Math.round(v).toLocaleString() : Math.round(v) },
+    { key:'feedsSchHr',  kpiKey:'fsh', title:'Feeds/Sch. Hr.',  target:TARGETS.feedsSchHr, unit:'',  arrow:'up',   fmt: v => v>=1000 ? Math.round(v).toLocaleString() : Math.round(v) },
+  ];
+
+  const shiftsToShow = machine.shifts.length >= 2
+    ? [machine.shifts[0], machine.shifts[1]]
+    : [machine.shifts[0], null];
+
+  shiftsToShow.forEach((shift, si) => {
+    const col = document.createElement('div');
+    col.className = 'shift-col fade-in';
+    col.style.animationDelay = `${si * 0.12}s`;
+
+    if(!shift){
+      col.innerHTML = `<div class="shift-label s2">2ND SHIFT</div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;color:var(--text4);font-family:Oswald;font-size:1.3rem;letter-spacing:2px">NO DATA</div>`;
+      body.appendChild(col);
+      return;
+    }
+
+    const lbl = document.createElement('div');
+    lbl.className = `shift-label ${si ? 's2' : 's1'}`;
+    lbl.textContent = `${shift.shift.toUpperCase()} SHIFT \u2014 OEE: ${shift.oee}%`;
+    col.appendChild(lbl);
+
+    metricDefs.forEach(metric => {
+      const panel = document.createElement('div');
+      panel.className = 'chart-panel';
+
+      const vals = shift[metric.key];
+      const kpiVal = shift.kpi ? shift.kpi[metric.kpiKey] : 0;
+      const hit = metric.arrow === 'down' ? kpiVal <= metric.target : kpiVal >= metric.target;
+      panel.classList.add(hit ? 'panel-hit' : 'panel-miss');
+
+      const ac = metric.arrow==='down' ? (hit?'\u25BC':'\u25B2') : (hit?'\u25B2':'\u25BC');
+
+      const nzI = vals.map((v,i)=>({v,i})).filter(o=>o.v>0);
+      let bestI=-1, worstI=-1;
+      if(nzI.length > 1){
+        if(metric.arrow==='down'){ bestI=nzI.reduce((a,b)=>a.v<b.v?a:b).i; worstI=nzI.reduce((a,b)=>a.v>b.v?a:b).i; }
+        else { bestI=nzI.reduce((a,b)=>a.v>b.v?a:b).i; worstI=nzI.reduce((a,b)=>a.v<b.v?a:b).i; }
+      }
+
+      panel.innerHTML = `<div class="chart-hdr">
+        <span class="chart-badge ${si?'s2':'s1'}">${machine.short}</span>
+        <span class="chart-ttl">${metric.title}</span>
+        <div class="chart-kpi">
+          <span class="chart-kpi-val" style="color:${hit?'var(--green)':'#c8102e'}">${metric.fmt(kpiVal)}</span>
+          <span class="chart-kpi-arrow ${hit?'good':'bad'}">${ac}</span>
+        </div>
+      </div><div class="chart-wrap"><canvas></canvas></div>`;
+      col.appendChild(panel);
+
+      const ctx = panel.querySelector('canvas').getContext('2d');
+
+      const r7 = [];
+      for(let i=0; i<vals.length; i++){
+        const w = vals.slice(Math.max(0,i-6), i+1).filter(v=>v>0);
+        r7.push(w.length ? w.reduce((a,b)=>a+b,0)/w.length : null);
+      }
+
+      const bC = vals.map((v,i) => {
+        if(v===0) return 'rgba(200,200,200,0.15)';
+        if(i===bestI) return 'rgba(15,138,79,0.85)';
+        if(i===worstI) return 'rgba(200,16,46,0.7)';
+        return (metric.arrow==='down' ? v<=metric.target : v>=metric.target) ? 'rgba(15,138,79,0.55)' : 'rgba(0,42,92,0.6)';
+      });
+      const boC = vals.map((v,i) => {
+        if(v===0) return 'transparent';
+        if(i===bestI) return 'rgba(15,138,79,1)';
+        if(i===worstI) return 'rgba(200,16,46,1)';
+        return (metric.arrow==='down' ? v<=metric.target : v>=metric.target) ? 'rgba(15,138,79,0.8)' : 'rgba(0,42,92,0.85)';
+      });
+
+      const chart = new Chart(ctx, {
+        type:'bar',
+        data:{
+          labels: shift.dates,
+          datasets:[
+            { label:metric.title, data:vals, backgroundColor:bC, borderColor:boC, borderWidth:1, borderRadius:2, barPercentage:.72, categoryPercentage:.85 },
+            { label:'Target', data:Array(shift.dates.length).fill(metric.target), type:'line', borderColor:'var(--navy2)', borderWidth:2.5, pointRadius:0, fill:false, order:0 },
+            { label:'7d', data:r7, type:'line', borderColor:'rgba(134,147,151,0.5)', borderWidth:1.5, pointRadius:0, fill:false, borderDash:[4,3], order:1, spanGaps:true }
+          ]
+        },
+        options:{
+          responsive:true, maintainAspectRatio:false, animation:{duration:450},
+          layout:{padding:{top:2,right:2,bottom:0,left:2}},
+          plugins:{
+            legend:{display:false},
+            tooltip:{
+              backgroundColor:'rgba(0,42,92,0.95)', titleColor:'#fff', bodyColor:'#e0e0e0',
+              titleFont:{size:11,family:'Barlow Condensed'}, bodyFont:{size:10,family:'Barlow Condensed'}, padding:6,
+              callbacks:{
+                label: c => {
+                  if(c.datasetIndex===1) return `Target: ${metric.target}${metric.unit}`;
+                  if(c.datasetIndex===2) return `7d Avg: ${c.parsed.y ? c.parsed.y.toFixed(1) : '\u2014'}`;
+                  let x=''; if(c.dataIndex===bestI) x=' \u2605 Best'; if(c.dataIndex===worstI) x=' \u25BC Worst';
+                  return `${c.parsed.y}${metric.unit}${x}`;
+                }
+              }
+            }
+          },
+          scales:{
+            x:{ grid:{display:false}, ticks:{color:'var(--text3)', font:{size:Math.max(7,Math.min(10,window.innerWidth/200)), family:'Barlow Condensed', weight:600}, maxRotation:0, autoSkip:true}, border:{color:'var(--bg4)'} },
+            y:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{color:'var(--text4)', font:{size:Math.max(7,Math.min(9,window.innerWidth/220)), family:'Barlow Condensed'}, maxTicksLimit:4,
+              callback: v => { if(metric.key==='downtime') return v+'%'; if(v>=1000) return (v/1000).toFixed(1)+'k'; return v; }
+            }, border:{display:false}, beginAtZero:true }
+          }
+        },
+        plugins:[{
+          afterDatasetsDraw(chart){
+            const meta=chart.getDatasetMeta(0), cx=chart.ctx; cx.save();
+            const fs=Math.max(6, Math.min(9, chart.width/55));
+            cx.font=`700 ${fs}px 'Barlow Condensed'`; cx.textAlign='center';
+            meta.data.forEach((bar,i) => {
+              const v=chart.data.datasets[0].data[i]; if(v===0) return;
+              const onT = metric.arrow==='down' ? v<=metric.target : v>=metric.target;
+              cx.fillStyle = i===bestI ? 'var(--green)' : i===worstI ? '#c8102e' : onT ? '#1a6b3c' : 'var(--text2)';
+              let l = metric.key==='downtime' ? v+'%' : (metric.key==='feedRunHr'||metric.key==='feedsSchHr') ? Math.round(v).toLocaleString() : (Math.round(v*10)/10);
+              const y=bar.y-3; if(y > chart.chartArea.top+5) cx.fillText(l, bar.x, y);
+            }); cx.restore();
+          }
+        }]
+      });
+      charts.push(chart);
+    });
+    body.appendChild(col);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// ROTATION
+// ══════════════════════════════════════════════════════════════
+function startRotation(){ clearTimers(); if(isPaused||pages.length<=1) return;
+  let el=0; const pb=document.getElementById('progressBar');
+  progressTimer=setInterval(()=>{el+=100;pb.style.width=(el/rotateMs*100)+'%'},100);
+  rotateTimer=setTimeout(nextPage,rotateMs); }
+function clearTimers(){ clearTimeout(rotateTimer); clearInterval(progressTimer); document.getElementById('progressBar').style.width='0%'; }
+function togglePause(){ isPaused=!isPaused; document.getElementById('pauseBtn').innerHTML=isPaused?'&#9654;':'&#10074;&#10074;'; isPaused?clearTimers():startRotation(); }
+document.addEventListener('keydown', e => { if(e.key==='ArrowRight')nextPage(); else if(e.key==='ArrowLeft')prevPage(); else if(e.key===' '){e.preventDefault();togglePause();} });
+
+// ══════════════════════════════════════════════════════════════
+// FILE UPLOAD (fallback mode)
+// ══════════════════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', e => { const f=e.target.files[0]; if(f) loadFile(f); });
+const ubox=document.getElementById('uploadBox');
+ubox.addEventListener('dragover', e => { e.preventDefault(); ubox.style.borderColor='var(--navy2)'; });
+ubox.addEventListener('dragleave', () => ubox.style.borderColor='');
+ubox.addEventListener('drop', e => { e.preventDefault(); ubox.style.borderColor=''; if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+function loadFile(file){
+  const r=new FileReader();
+  r.onload = evt => {
+    const wb = XLSX.read(new Uint8Array(evt.target.result), {type:'array'});
+    processWorkbook(wb);
+  };
+  r.readAsArrayBuffer(file);
+}
+
+window.addEventListener('resize', () => { if(allMachines.length) showPage(currentPageIdx); });
+
+// ══════════════════════════════════════════════════════════════
+// AUTO-START for kiosk/TV (URL param: ?autostart=1)
+// ══════════════════════════════════════════════════════════════
+// If deployed to Vercel and bookmarked with ?autostart=1,
+// it will auto-connect to saved Google Sheets URL on load.
+</script>
+</body>
+</html>
