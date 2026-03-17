@@ -594,8 +594,21 @@ function clearTimers(){clearTimeout(rotateTimer);clearInterval(progressTimer);do
 function togglePause(){isPaused=!isPaused;document.getElementById('pauseBtn').innerHTML=isPaused?'\u25B6':'\u23F8';isPaused?clearTimers():startRotation();}
 document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')nextSlide();else if(e.key==='ArrowLeft')prevSlide();else if(e.key===' '){e.preventDefault();togglePause();}});
 
-/* ═══ AUTO INIT ═══ */
-(function(){const saved=localStorage.getItem(LS_KEY);if(saved){document.getElementById('gsUrl').value=saved;document.getElementById('savedTag').style.display='inline';if(new URLSearchParams(location.search).get('autostart')==='1')setTimeout(connectGoogleSheets,500);}})();
+/* ═══ AUTO INIT — HARDCODED FOR DALLAS TV ═══ */
+const HARDCODED_GS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR3rSZ5MJC4R-S1pqWwlPTIEIgguiaBzWLp6BGPzZL4EJQYRGpfBgH7lfqKXd1g_lQg1-pt7COXMOHK/pub?output=xlsx';
+(function(){
+  // Check for ?gs= parameter override, otherwise use hardcoded URL
+  const params = new URLSearchParams(location.search);
+  const gsParam = params.get('gs');
+  const urlToUse = gsParam || localStorage.getItem(LS_KEY) || HARDCODED_GS_URL;
+  document.getElementById('gsUrl').value = urlToUse;
+  // Auto-start: launch immediately if ?autostart=1 OR if using hardcoded/saved URL
+  const autostart = params.get('autostart') === '1' || (!gsParam && urlToUse === HARDCODED_GS_URL);
+  if(urlToUse){
+    document.getElementById('savedTag').style.display='inline';
+    if(autostart) setTimeout(connectGoogleSheets, 500);
+  }
+})();
 </script>
 </body>
 </html>
