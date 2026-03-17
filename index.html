@@ -106,14 +106,16 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;-web
 .dept-banner-label{font-family:'Oswald',sans-serif;font-size:2.2vw;font-weight:700;letter-spacing:4px;color:var(--navy);text-transform:uppercase}
 .dept-banner-page{font-family:'Barlow Condensed',sans-serif;font-size:1.3vw;color:var(--silver);font-weight:700;letter-spacing:2px;background:var(--bg3);padding:4px 20px;border-radius:5px}
 
-/* ── MACHINE PAIR LAYOUT ── */
-.machine-pair{flex:1;display:flex;gap:2vw;padding:1.5vh 2.5vw;min-height:0}
-.machine-solo{flex:1;display:flex;justify-content:center;padding:1.5vh 2.5vw;min-height:0}
-.machine-solo .mc-big{max-width:50vw}
+/* ── MACHINE STACK LAYOUT (vertical, one on top of the other) ── */
+.machine-pair{flex:1;display:flex;flex-direction:column;gap:1.2vh;padding:1vh 2vw;min-height:0}
+.machine-solo{flex:1;display:flex;flex-direction:column;gap:1.2vh;padding:1vh 2vw;min-height:0;justify-content:center}
 
-/* ── BIG MACHINE CARD ── */
-.mc-big{flex:1;background:var(--panel);border-radius:16px;border:3px solid var(--panel-border);display:flex;flex-direction:column;padding:2vh 2vw;position:relative;overflow:hidden;box-shadow:0 4px 20px rgba(0,42,92,0.06)}
-.mc-big::before{content:'';position:absolute;top:0;left:0;width:100%;height:7px;border-radius:16px 16px 0 0}
+/* ── BIG MACHINE CARD — horizontal row: identity left, KPIs right ── */
+.mc-big{flex:1;background:var(--panel);border-radius:16px;border:3px solid var(--panel-border);
+  display:flex;flex-direction:row;align-items:stretch;
+  padding:1.5vh 1.5vw;position:relative;overflow:hidden;
+  box-shadow:0 4px 20px rgba(0,42,92,0.06);gap:1.5vw}
+.mc-big::before{content:'';position:absolute;top:0;left:0;width:100%;height:6px;border-radius:16px 16px 0 0}
 .mc-big.good::before{background:var(--green)}
 .mc-big.warn::before{background:var(--yellow)}
 .mc-big.bad::before{background:var(--red)}
@@ -121,26 +123,27 @@ body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;-web
 .mc-big.warn{border-color:var(--yellow)}
 .mc-big.bad{border-color:var(--red)}
 
-.mc-big-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5vh;flex-shrink:0}
-.mc-big-name{font-family:'Oswald',sans-serif;font-size:2.8vw;font-weight:700;letter-spacing:2px;color:var(--navy);line-height:1.1}
+/* Left identity block: name + OEE ring stacked */
+.mc-big-top{display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0;width:18vw;gap:.5vh}
+.mc-big-name{font-family:'Oswald',sans-serif;font-size:2.2vw;font-weight:700;letter-spacing:2px;color:var(--navy);line-height:1.1;text-align:center}
 
-/* OEE RING — MASSIVE */
-.oee-ring-big{position:relative;width:11vw;height:11vw;flex-shrink:0}
+/* OEE RING */
+.oee-ring-big{position:relative;width:8vw;height:8vw;flex-shrink:0}
 .oee-ring-big svg{width:100%;height:100%;transform:rotate(-90deg)}
 .oee-ring-big .ring-bg{fill:none;stroke:var(--bg3);stroke-width:6}
 .oee-ring-big .ring-val{fill:none;stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1.5s ease}
 .oee-ring-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
-.oee-ring-pct{font-family:'Oswald',sans-serif;font-size:3vw;font-weight:700;color:var(--text);line-height:1}
-.oee-ring-label{font-family:'Barlow Condensed',sans-serif;font-size:1.1vw;font-weight:700;color:var(--text3);letter-spacing:2px;margin-top:.2vh}
+.oee-ring-pct{font-family:'Oswald',sans-serif;font-size:2.2vw;font-weight:700;color:var(--text);line-height:1}
+.oee-ring-label{font-family:'Barlow Condensed',sans-serif;font-size:.9vw;font-weight:700;color:var(--text3);letter-spacing:2px;margin-top:.1vh}
 
-/* KPI ROW — 4 BIG BOXES */
-.mc-big-kpis{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:1vw;min-height:0}
-.kpi-box{background:var(--bg2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1vh .5vw;border:2px solid transparent;position:relative}
+/* KPI ROW — 4 BIG BOXES filling the right side */
+.mc-big-kpis{flex:1;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:.8vw;min-height:0}
+.kpi-box{background:var(--bg2);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.8vh .5vw;border:2px solid transparent;position:relative}
 .kpi-box.hit{border-color:var(--green);background:var(--green-soft)}
 .kpi-box.miss{border-color:var(--red);background:var(--red-soft)}
 .kpi-box.miss-warn{border-color:var(--yellow);background:var(--yellow-soft)}
-.kpi-label{font-family:'Barlow Condensed',sans-serif;font-size:1.3vw;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:.3vh}
-.kpi-val{font-family:'Oswald',sans-serif;font-size:3.8vw;font-weight:700;line-height:1}
+.kpi-label{font-family:'Barlow Condensed',sans-serif;font-size:1.2vw;font-weight:700;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:.2vh}
+.kpi-val{font-family:'Oswald',sans-serif;font-size:3.2vw;font-weight:700;line-height:1}
 .kpi-val.good{color:var(--green)}
 .kpi-val.bad{color:var(--red)}
 .kpi-val.warn{color:var(--yellow)}
