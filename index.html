@@ -261,7 +261,7 @@ body.cursor-hidden{cursor:none}
 <video id="noSleepVideo" playsinline muted loop src="data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAz5tb292AAAAbG12aGQAAAAAAAAAAAAAAAAAA+gAAAPoAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIYdHJhawAAAFx0a2hkAAAAAwAAAAAAAAAAAAAAAQAAAAAAAAPoAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAIAAAACAAAAAABqG1kaWEAAAAgbWRoZAAAAAAAAAAAAAAAAAA8AAAAPABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABU21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAABNzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAgACABIAAAASAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGP//AAAALWF2Y0MBQAAe/+EAFW5BADAZ7AMIECEAABdgAA8JBYABNYiJhAAAABhzdHRzAAAAAAAAAAEAAAABAAAeAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAAUc3RzegAAAAAAAAACAAAAEAAAABRzdGNvAAAAAAAAAAEAAAAsAAAAYHVkdGEAAABYbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcmFwcGwAAAAAAAAAAAAAAAAsaWxzdAAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2MS43LjEwMA=="></video>
 <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">Parsing PEFS Data...</div></div>
 
-<!-- TV tap-to-start overlay (Samsung needs one user gesture for fullscreen) -->
+<!-- TV tap-to-start overlay (Samsung Tizen needs a user gesture for fullscreen) -->
 <div class="tap-overlay" id="tapOverlay">
   <div class="tap-ring"><div class="tap-ring-inner">&#9654;</div></div>
   <h2>SUPPLYONE DALLAS</h2>
@@ -369,7 +369,7 @@ function hideLoading(){document.getElementById('loadingOverlay').classList.remov
 function goFullscreen(){const el=document.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen).call(el);requestWakeLock();}
 function returnToConfig(){clearTimers();if(gsPollTimer)clearInterval(gsPollTimer);document.getElementById('dashboard').classList.remove('active');document.getElementById('uploadScreen').style.display='flex';}
 
-/* ═══ PARSE PEFS ═══ */
+/* ═══ PARSE PEFS — xRow with ALB Metrics formulas ═══ */
 function processWorkbook(wb){
   let sn=wb.SheetNames[0];for(const n of wb.SheetNames){if(n.toLowerCase().includes('pefs')){sn=n;break;}}
   const ws=wb.Sheets[sn],dateGenStr=cellStr(ws,2,1),dateRangeStr=cellStr(ws,2,11);
@@ -388,7 +388,7 @@ function processWorkbook(wb){
   departments.forEach(dept=>{dept.machines.forEach(m=>{
     const d=m.total||(m.shifts.length?m.shifts[0].data:null);
     if(!d){m.kpis=null;return;}
-    // Use the new pre-calculated metrics from Google Sheets columns AE-AH
+    // Use the calculated metrics (computed in xRow from raw PEFS data)
     const downtime=d.downtimePctNew||0;
     const setup=d.minPerSetup||0;
     const feedsRunHr=d.feedsRunHr||0;
@@ -411,7 +411,60 @@ function processWorkbook(wb){
   parsedData={departments,dateGenStr,dateRangeStr};
   buildSlides();renderDashboard();
 }
-function xRow(ws,row){return{prodQty:cellNum(ws,row,4),msq:cellNum(ws,row,5),setups:cellNum(ws,row,6),rate:cellNum(ws,row,7),waste:cellNum(ws,row,8),stdSetup:cellNum(ws,row,9),stdRun:cellNum(ws,row,10),setupHrs:cellNum(ws,row,12),runHrs:cellNum(ws,row,13),downOn:cellNum(ws,row,14),downOff:cellNum(ws,row,15),actHrs:cellNum(ws,row,16),downPct:cellNum(ws,row,17),util:cellNum(ws,row,18),setupEff:cellNum(ws,row,19),runEff:cellNum(ws,row,20),totalEff:cellNum(ws,row,21),minPerSetup:cellNum(ws,row,31),feedsRunHr:cellNum(ws,row,32),feedsSchHr:cellNum(ws,row,33),downtimePctNew:cellNum(ws,row,34)};}
+
+/* ═══════════════════════════════════════════════════════════════
+   xRow — Extract raw PEFS columns & compute ALB Metrics
+   
+   ALB Metrics Formulas (derived from 2_ALB_Metrics columns AE-AH):
+     AE  Min/Setup    = (SetupHrs[L] × 60) / Setups[F]
+     AF  Feeds/Run Hr = ProdQty[D] / RunHrs[M]
+     AG  Feeds/Sch Hr = ProdQty[D] / ActHrs[P]
+     AH  Downtime %   = (DownOnStd[N] + DownOffStd[O]) / ActHrs[P] × 100
+   
+   Falls back to pre-calculated AE-AH columns if they exist in the sheet.
+   ═══════════════════════════════════════════════════════════════ */
+function xRow(ws,row){
+  // Read raw PEFS columns (A through U)
+  var prodQty   = cellNum(ws,row,4),   // D  — Production Qty
+      msq       = cellNum(ws,row,5),   // E  — MSQ
+      setups    = cellNum(ws,row,6),   // F  — Setups
+      rate      = cellNum(ws,row,7),   // G  — Rate Qty/Hr
+      waste     = cellNum(ws,row,8),   // H  — Waste Qty
+      stdSetup  = cellNum(ws,row,9),   // I  — Standard Setup Hrs
+      stdRun    = cellNum(ws,row,10),  // J  — Standard Run Hrs
+      setupHrs  = cellNum(ws,row,12),  // L  — Production Setup Hrs
+      runHrs    = cellNum(ws,row,13),  // M  — Production Run Hrs
+      downOn    = cellNum(ws,row,14),  // N  — Down Hrs On Std
+      downOff   = cellNum(ws,row,15),  // O  — Down Hrs Off Std
+      actHrs    = cellNum(ws,row,16),  // P  — Act. Hrs Total
+      downPct   = cellNum(ws,row,17),  // Q  — Down %
+      util      = cellNum(ws,row,18),  // R  — Utilization
+      setupEff  = cellNum(ws,row,19),  // S  — Setup Efficiency
+      runEff    = cellNum(ws,row,20),  // T  — Run Efficiency
+      totalEff  = cellNum(ws,row,21);  // U  — Total Efficiency
+
+  // ── Compute ALB Metrics from raw PEFS data ──
+  // AE: Minutes Per Setup = (Setup Production Hrs × 60) / Number of Setups
+  var minPerSetup = (setups > 0 && setupHrs > 0) ? (setupHrs * 60) / setups : 0;
+  // AF: Feeds Per Run Hour = Production Qty / Run Hrs
+  var feedsRunHr = (runHrs > 0) ? prodQty / runHrs : 0;
+  // AG: Feeds Per Scheduled Hour = Production Qty / Total Actual Hrs
+  var feedsSchHr = (actHrs > 0) ? prodQty / actHrs : 0;
+  // AH: Downtime % = (Down On Std + Down Off Std) / Total Actual Hrs × 100
+  var downtimePctNew = (actHrs > 0) ? ((downOn + downOff) / actHrs) * 100 : 0;
+
+  // ── Override with pre-calculated AE-AH if present (for sheets that have them) ──
+  var aeVal = cellNum(ws,row,31), afVal = cellNum(ws,row,32),
+      agVal = cellNum(ws,row,33), ahVal = cellNum(ws,row,34);
+  if(aeVal > 0) minPerSetup = aeVal;
+  if(afVal > 0) feedsRunHr = afVal;
+  if(agVal > 0) feedsSchHr = agVal;
+  if(ahVal > 0) downtimePctNew = (ahVal > 1) ? ahVal : ahVal * 100; // handle decimal (0.19) vs percent (19)
+
+  return {prodQty, msq, setups, rate, waste, stdSetup, stdRun, setupHrs, runHrs,
+          downOn, downOff, actHrs, downPct, util, setupEff, runEff, totalEff,
+          minPerSetup, feedsRunHr, feedsSchHr, downtimePctNew};
+}
 function r1(v){return Math.round(v*10)/10;}
 
 /* ═══ BUILD SLIDE SEQUENCE ═══ */
