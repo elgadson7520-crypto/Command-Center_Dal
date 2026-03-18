@@ -258,7 +258,7 @@ body.cursor-hidden{cursor:none}
 </style>
 </head>
 <body>
-<video id="noSleepVideo" playsinline muted loop src="data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAz5tb292AAAAbG12aGQAAAAAAAAAAAAAAAAAA+gAAAPoAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIYdHJhawAAAFx0a2hkAAAAAwAAAAAAAAAAAAAAAQAAAAAAAAPoAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAIAAAACAAAAAABqG1kaWEAAAAgbWRoZAAAAAAAAAAAAAAAAAA8AAAAPABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABU21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAABNzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAgACABIAAAASAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGP//AAAALWF2Y0MBQAAe/+EAFW5CADAZ7AMIECEAABdgAA8JBYABNYiJhAAAABhzdHRzAAAAAAAAAAEAAAABAAAeAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAAUc3RzegAAAAAAAAACAAAAEAAAABRzdGNvAAAAAAAAAAEAAAAsAAAAYHVkdGEAAABYbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcmFwcGwAAAAAAAAAAAAAAAAsaWxzdAAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2MS43LjEwMA=="></video>
+<video id="noSleepVideo" playsinline muted loop src="data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDJpc29tYXZjMQAAAz5tb292AAAAbG12aGQAAAAAAAAAAAAAAAAAA+gAAAPoAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIYdHJhawAAAFx0a2hkAAAAAwAAAAAAAAAAAAAAAQAAAAAAAAPoAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAIAAAACAAAAAABqG1kaWEAAAAgbWRoZAAAAAAAAAAAAAAAAAA8AAAAPABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABU21pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAABNzdGJsAAAAZ3N0c2QAAAAAAAAAAQAAAFdhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAgACABIAAAASAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGP//AAAALWF2Y0MBQAAe/+EAFW5BADAZ7AMIECEAABdgAA8JBYABNYiJhAAAABhzdHRzAAAAAAAAAAEAAAABAAAeAAAAABxzdHNjAAAAAAAAAAEAAAABAAAAAQAAAAEAAAAUc3RzegAAAAAAAAACAAAAEAAAABRzdGNvAAAAAAAAAAEAAAAsAAAAYHVkdGEAAABYbWV0YQAAAAAAAAAhaGRscgAAAAAAAAAAbWRpcmFwcGwAAAAAAAAAAAAAAAAsaWxzdAAAACSpdG9vAAAAHGRhdGEAAAABAAAAAExhdmY2MS43LjEwMA=="></video>
 <div class="loading-overlay" id="loadingOverlay"><div class="loading-spinner"></div><div class="loading-text" id="loadingText">Parsing PEFS Data...</div></div>
 
 <!-- TV tap-to-start overlay (Samsung needs one user gesture for fullscreen) -->
@@ -308,7 +308,7 @@ body.cursor-hidden{cursor:none}
   </div>
   <div class="slide-area" id="slideArea"></div>
   <div class="ftr">
-    <div class="ftr-targets"><div>OEE: <span>85%</span></div><div>DT: <span>&le;10%</span></div><div>Util: <span>&ge;95%</span></div><div>Eff: <span>&ge;100%</span></div></div>
+    <div class="ftr-targets"><div>DT: <span>&le;10%</span></div><div>Setup: <span>&le;25 min</span></div><div>Feeds/Run: <span>&ge;1000</span></div><div>Feeds/Sch: <span>&ge;800</span></div></div>
     <div class="ftr-progress"><div class="progress-dots" id="progressDots"></div><div class="ftr-progress-bar"><div class="ftr-progress-fill" id="progressFill"></div></div></div>
     <div class="ftr-live" id="ftrLive" style="display:none"><div class="pulse"></div><span id="ftrLiveText">Live</span></div>
   </div>
@@ -317,8 +317,9 @@ body.cursor-hidden{cursor:none}
 
 <script>
 const LS_KEY='so_dallas_pefs_url';
-const TARGETS={oee:85,downtime:10,utilization:95,efficiency:100,setupEff:100};
-const Q_GOALS={oee:85,downtime:8,utilization:96,efficiency:105};
+// Updated targets for new metrics
+const TARGETS={downtime:10,setup:25,feedsRunHr:1000,feedsSchHr:800};
+const Q_GOALS={downtime:8,setup:20,feedsRunHr:1200,feedsSchHr:900};
 const TIMING={machine:15000,motive:8000,rank:12000,goals:12000,summary:12000};
 let gsUrl='',gsPollTimer=null,gsLastHash='',wakeLock=null,parsedData=null;
 let slides=[],curSlide=0,rotateTimer=null,progressTimer=null,isPaused=false;
@@ -383,18 +384,34 @@ function processWorkbook(wb){
     if(a.match(/^\d{1,2}$/)&&cm){cm.shifts.push({shift:a,data:xRow(ws,row)});continue;}
     if(a.match(/^\d{2,}\s+\S/)&&cd&&!a.includes('Totals')){cm={name:a,shifts:[],total:null};cd.machines.push(cm);continue;}
   }
-  // Compute KPIs
+  // Compute KPIs from new metrics
   departments.forEach(dept=>{dept.machines.forEach(m=>{
     const d=m.total||(m.shifts.length?m.shifts[0].data:null);
     if(!d){m.kpis=null;return;}
-    const av=d.util,q=d.prodQty>0?Math.max(0,1-d.waste/d.prodQty):1,oee=av*Math.min(d.runEff,1)*q*100;
-    m.kpis={oee:r1(oee),downtime:r1(d.downPct*100),utilization:r1(d.util*100),runEff:r1(d.runEff*100),setupEff:r1(d.setupEff*100),efficiency:r1(d.totalEff*100),quality:r1(q*100),prodQty:d.prodQty,waste:d.waste,setups:d.setups,rate:Math.round(d.rate)};
+    // Use the new pre-calculated metrics from Google Sheets columns AE-AH
+    const downtime=d.downtimePctNew||0;
+    const setup=d.minPerSetup||0;
+    const feedsRunHr=d.feedsRunHr||0;
+    const feedsSchHr=d.feedsSchHr||0;
+    // Calculate overall machine status based on new metrics
+    let status='good';
+    if(downtime>TARGETS.downtime||setup>TARGETS.setup||feedsRunHr<TARGETS.feedsRunHr*0.85||feedsSchHr<TARGETS.feedsSchHr*0.85)status='warn';
+    if(downtime>15||setup>35||feedsRunHr<TARGETS.feedsRunHr*0.7||feedsSchHr<TARGETS.feedsSchHr*0.7)status='bad';
+    m.kpis={
+      downtime:r1(downtime),
+      setup:r1(setup),
+      feedsRunHr:r1(feedsRunHr),
+      feedsSchHr:r1(feedsSchHr),
+      status:status,
+      prodQty:d.prodQty||0,
+      setups:d.setups||0
+    };
     m.dept=dept.name;
   });});
   parsedData={departments,dateGenStr,dateRangeStr};
   buildSlides();renderDashboard();
 }
-function xRow(ws,row){return{prodQty:cellNum(ws,row,4),msq:cellNum(ws,row,5),setups:cellNum(ws,row,6),rate:cellNum(ws,row,7),waste:cellNum(ws,row,8),stdSetup:cellNum(ws,row,9),stdRun:cellNum(ws,row,10),setupHrs:cellNum(ws,row,12),runHrs:cellNum(ws,row,13),downOn:cellNum(ws,row,14),downOff:cellNum(ws,row,15),actHrs:cellNum(ws,row,16),downPct:cellNum(ws,row,17),util:cellNum(ws,row,18),setupEff:cellNum(ws,row,19),runEff:cellNum(ws,row,20),totalEff:cellNum(ws,row,21)};}
+function xRow(ws,row){return{prodQty:cellNum(ws,row,4),msq:cellNum(ws,row,5),setups:cellNum(ws,row,6),rate:cellNum(ws,row,7),waste:cellNum(ws,row,8),stdSetup:cellNum(ws,row,9),stdRun:cellNum(ws,row,10),setupHrs:cellNum(ws,row,12),runHrs:cellNum(ws,row,13),downOn:cellNum(ws,row,14),downOff:cellNum(ws,row,15),actHrs:cellNum(ws,row,16),downPct:cellNum(ws,row,17),util:cellNum(ws,row,18),setupEff:cellNum(ws,row,19),runEff:cellNum(ws,row,20),totalEff:cellNum(ws,row,21),minPerSetup:cellNum(ws,row,31),feedsRunHr:cellNum(ws,row,32),feedsSchHr:cellNum(ws,row,33),downtimePctNew:cellNum(ws,row,34)};}
 function r1(v){return Math.round(v*10)/10;}
 
 /* ═══ BUILD SLIDE SEQUENCE ═══ */
@@ -407,9 +424,13 @@ function buildSlides(){
     const bP=b.name.toLowerCase().includes('primary')?0:1;
     return aP-bP;
   });
-  // Find worst machine for focus callout
+  // Find worst machine for focus callout (based on downtime or setup)
   const allM=[];depts.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
-  const worstM=allM.length?allM.reduce((a,b)=>a.kpis.oee<b.kpis.oee?a:b):null;
+  const worstM=allM.length?allM.reduce((a,b)=>{
+    const aScore=a.kpis.downtime+a.kpis.setup/25;
+    const bScore=b.kpis.downtime+b.kpis.setup/25;
+    return aScore>bScore?a:b;
+  }):null;
 
   depts.forEach(dept=>{
     const machines=dept.machines.filter(m=>m.kpis);
@@ -425,7 +446,7 @@ function buildSlides(){
   });
   // Plant summary
   slides.push({type:'summary',duration:TIMING.summary});
-  // OEE Ranking
+  // Ranking
   slides.push({type:'ranking',duration:TIMING.rank});
   // Q1 Goals
   slides.push({type:'goals',duration:TIMING.goals});
@@ -457,7 +478,7 @@ function renderDashboard(){
   if(isTvMode) setTimeout(enterTvMode, 600);
 }
 
-/* ═══ MACHINE PAIR SLIDE ═══ */
+/* ═══ MACHINE PAIR SLIDE — UPDATED FOR NEW METRICS ═══ */
 function renderMachineSlide(s){
   const cls=s.isPrimary?'primary':'finishing';
   const icon=s.isPrimary?'P':'F';
@@ -471,25 +492,31 @@ function renderMachineSlide(s){
   html+=`<div class="${isSolo?'machine-solo':'machine-pair'}">`;
   s.machines.forEach(m=>{
     const k=m.kpis;
-    let status='warn';if(k.oee>=TARGETS.oee&&k.downtime<=TARGETS.downtime)status='good';else if(k.oee<60||k.downtime>20)status='bad';
-    const circ=2*Math.PI*20,oeeCl=Math.min(k.oee,100),dOff=circ-(oeeCl/100)*circ;
-    const rC=k.oee>=85?'var(--green)':k.oee>=65?'var(--yellow)':'var(--red)';
+    let statusCls=k.status||'warn';
+    // Create a composite "health" score for the ring display (average of normalized metrics)
+    const dtScore=Math.max(0,100-(k.downtime/TARGETS.downtime*100));
+    const setupScore=Math.max(0,100-(k.setup/TARGETS.setup*100));
+    const feedsRunScore=Math.min(100,(k.feedsRunHr/TARGETS.feedsRunHr*100));
+    const feedsSchScore=Math.min(100,(k.feedsSchHr/TARGETS.feedsSchHr*100));
+    const healthScore=r1((dtScore+setupScore+feedsRunScore+feedsSchScore)/4);
+    const circ=2*Math.PI*20,hcl=Math.min(healthScore,100),dOff=circ-(hcl/100)*circ;
+    const rC=healthScore>=85?'var(--green)':healthScore>=65?'var(--yellow)':'var(--red)';
     const kpis=[
       {label:'DOWNTIME',val:k.downtime+'%',hit:k.downtime<=TARGETS.downtime,cls:k.downtime<=TARGETS.downtime?'hit':k.downtime<=15?'miss-warn':'miss',
         vc:k.downtime<=TARGETS.downtime?'good':k.downtime<=15?'warn':'bad',tag:k.downtime<=TARGETS.downtime?'\u2713 ON TARGET':'\u25B2 HIGH'},
-      {label:'UTILIZATION',val:k.utilization+'%',hit:k.utilization>=TARGETS.utilization,cls:k.utilization>=TARGETS.utilization?'hit':'miss',
-        vc:k.utilization>=TARGETS.utilization?'good':'bad',tag:k.utilization>=TARGETS.utilization?'\u2713 ON TARGET':'\u25BC LOW'},
-      {label:'RUN EFF',val:k.runEff+'%',hit:k.runEff>=TARGETS.efficiency,cls:k.runEff>=TARGETS.efficiency?'hit':'miss',
-        vc:k.runEff>=TARGETS.efficiency?'good':'bad',tag:k.runEff>=TARGETS.efficiency?'\u2713 ON TARGET':'\u25BC BELOW'},
-      {label:'SETUP EFF',val:k.setupEff+'%',hit:k.setupEff>=TARGETS.setupEff,cls:k.setupEff>=TARGETS.setupEff?'hit':'miss',
-        vc:k.setupEff>=TARGETS.setupEff?'good':'bad',tag:k.setupEff>=TARGETS.setupEff?'\u2713 ON TARGET':'\u25BC BELOW'},
+      {label:'SETUP (MIN)',val:k.setup,hit:k.setup<=TARGETS.setup,cls:k.setup<=TARGETS.setup?'hit':k.setup<=35?'miss-warn':'miss',
+        vc:k.setup<=TARGETS.setup?'good':k.setup<=35?'warn':'bad',tag:k.setup<=TARGETS.setup?'\u2713 ON TARGET':'\u25B2 HIGH'},
+      {label:'FEEDS/RUN HR',val:Math.round(k.feedsRunHr),hit:k.feedsRunHr>=TARGETS.feedsRunHr,cls:k.feedsRunHr>=TARGETS.feedsRunHr?'hit':'miss',
+        vc:k.feedsRunHr>=TARGETS.feedsRunHr?'good':'bad',tag:k.feedsRunHr>=TARGETS.feedsRunHr?'\u2713 ON TARGET':'\u25BC LOW'},
+      {label:'FEEDS/SCH HR',val:Math.round(k.feedsSchHr),hit:k.feedsSchHr>=TARGETS.feedsSchHr,cls:k.feedsSchHr>=TARGETS.feedsSchHr?'hit':'miss',
+        vc:k.feedsSchHr>=TARGETS.feedsSchHr?'good':'bad',tag:k.feedsSchHr>=TARGETS.feedsSchHr?'\u2713 ON TARGET':'\u25BC LOW'},
     ];
-    html+=`<div class="mc-big ${status}">
+    html+=`<div class="mc-big ${statusCls}">
       <div class="mc-big-top">
         <div class="mc-big-name">${m.name}</div>
         <div class="oee-ring-big">
           <svg viewBox="0 0 48 48"><circle class="ring-bg" cx="24" cy="24" r="20"/><circle class="ring-val" cx="24" cy="24" r="20" stroke="${rC}" stroke-dasharray="${circ}" stroke-dashoffset="${dOff}"/></svg>
-          <div class="oee-ring-inner"><div class="oee-ring-pct">${k.oee}%</div><div class="oee-ring-label">OEE</div></div>
+          <div class="oee-ring-inner"><div class="oee-ring-pct">${healthScore}%</div><div class="oee-ring-label">HEALTH</div></div>
         </div>
       </div>
       <div class="mc-big-kpis">
@@ -510,12 +537,13 @@ function renderMachineSlide(s){
 function renderMotiveSlide(s){
   const q=QUOTES[quoteIdx%QUOTES.length];quoteIdx++;
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
-  const hg=allM.filter(m=>m.kpis.oee>=TARGETS.oee).length,tot=allM.length;
-  const emo=hg>=tot*0.7?'\uD83D\uDD25':hg>=tot*0.4?'\uD83D\uDCAA':'\u26A1';
+  const good=allM.filter(m=>m.kpis.downtime<=TARGETS.downtime&&m.kpis.setup<=TARGETS.setup).length,tot=allM.length;
+  const emo=good>=tot*0.7?'\uD83D\uDD25':good>=tot*0.4?'\uD83D\uDCAA':'\u26A1';
   let callout='';
-  if(s.worstM&&s.worstM.kpis.oee<TARGETS.oee){
-    const w=s.worstM,gap=TARGETS.oee-w.kpis.oee;
-    callout=`<div class="motive-machine-callout"><div class="focus-label">FOCUS MACHINE THIS WEEK</div><div class="focus-msg">${w.name}: OEE at ${w.kpis.oee}% — closing ${r1(gap)}% gap hits our target</div></div>`;
+  if(s.worstM&&s.worstM.kpis){
+    const w=s.worstM,dtGap=TARGETS.downtime-w.kpis.downtime,setupGap=TARGETS.setup-w.kpis.setup;
+    const focus=dtGap<setupGap?`Downtime at ${w.kpis.downtime}% (target ${TARGETS.downtime}%)`:`Setup at ${w.kpis.setup}min (target ${TARGETS.setup}min)`;
+    callout=`<div class="motive-machine-callout"><div class="focus-label">FOCUS MACHINE THIS WEEK</div><div class="focus-msg">${w.name}: ${focus}</div></div>`;
   }
   return `<div class="motive-slide">
     <div class="motive-inner">
@@ -532,15 +560,15 @@ function renderSummarySlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
   if(!allM.length) return '<div class="summary-slide-inner"><div class="summary-title">NO DATA</div></div>';
   const avg=(arr)=>r1(arr.reduce((a,b)=>a+b,0)/arr.length);
-  const oee=avg(allM.map(m=>m.kpis.oee)),dt=avg(allM.map(m=>m.kpis.downtime)),ut=avg(allM.map(m=>m.kpis.utilization)),eff=avg(allM.map(m=>m.kpis.efficiency)),qual=avg(allM.map(m=>m.kpis.quality));
+  const dt=avg(allM.map(m=>m.kpis.downtime)),setup=avg(allM.map(m=>m.kpis.setup)),feedsRun=avg(allM.map(m=>m.kpis.feedsRunHr)),feedsSch=avg(allM.map(m=>m.kpis.feedsSchHr));
   const kpis=[
-    {label:'PLANT OEE',val:oee+'%',hit:oee>=TARGETS.oee,vc:oee>=TARGETS.oee?'good':'bad',tag:`Target: ${TARGETS.oee}%`},
     {label:'DOWNTIME',val:dt+'%',hit:dt<=TARGETS.downtime,vc:dt<=TARGETS.downtime?'good':'bad',tag:`Target: \u2264${TARGETS.downtime}%`},
-    {label:'UTILIZATION',val:ut+'%',hit:ut>=TARGETS.utilization,vc:ut>=TARGETS.utilization?'good':'bad',tag:`Target: \u2265${TARGETS.utilization}%`},
-    {label:'EFFICIENCY',val:eff+'%',hit:eff>=TARGETS.efficiency,vc:eff>=TARGETS.efficiency?'good':'bad',tag:`Target: \u2265${TARGETS.efficiency}%`},
-    {label:'QUALITY',val:qual+'%',hit:qual>=99,vc:qual>=99?'good':'warn',tag:'Target: \u226599%'},
+    {label:'SETUP',val:r1(setup)+'m',hit:setup<=TARGETS.setup,vc:setup<=TARGETS.setup?'good':'bad',tag:`Target: \u2264${TARGETS.setup}m`},
+    {label:'FEEDS/RUN',val:Math.round(feedsRun),hit:feedsRun>=TARGETS.feedsRunHr,vc:feedsRun>=TARGETS.feedsRunHr?'good':'bad',tag:`Target: \u2265${TARGETS.feedsRunHr}`},
+    {label:'FEEDS/SCH',val:Math.round(feedsSch),hit:feedsSch>=TARGETS.feedsSchHr,vc:feedsSch>=TARGETS.feedsSchHr?'good':'bad',tag:`Target: \u2265${TARGETS.feedsSchHr}`},
+    {label:'MACHINES',val:allM.length,hit:true,vc:'neutral',tag:'Reporting'},
   ];
-  const hg=allM.filter(m=>m.kpis.oee>=TARGETS.oee).length;
+  const good=allM.filter(m=>m.kpis.downtime<=TARGETS.downtime&&m.kpis.setup<=TARGETS.setup).length;
   return `<div class="summary-slide-inner">
     <div class="summary-title">DALLAS PLANT — WEEKLY SUMMARY</div>
     <div class="summary-kpis">${kpis.map(k=>`<div class="summary-kpi ${k.hit?'hit':'miss'}">
@@ -548,26 +576,32 @@ function renderSummarySlide(){
       <div class="summary-kpi-val" style="color:var(--${k.vc})">${k.val}</div>
       <div class="summary-kpi-target" style="color:var(--${k.vc})">${k.tag}</div>
     </div>`).join('')}</div>
-    <div class="summary-machines">${hg} OF ${allM.length} MACHINES HITTING OEE TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div>
+    <div class="summary-machines">${good} OF ${allM.length} MACHINES ON TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div>
   </div>`;
 }
 
 /* ═══ RANKING SLIDE ═══ */
 function renderRankingSlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
-  allM.sort((a,b)=>b.kpis.oee-a.kpis.oee);
+  allM.sort((a,b)=>{
+    const aScore=a.kpis.downtime+a.kpis.setup/25;
+    const bScore=b.kpis.downtime+b.kpis.setup/25;
+    return aScore-bScore;
+  });
   const medals=['\uD83E\uDD47','\uD83E\uDD48','\uD83E\uDD49'];
   return `<div class="rank-slide-inner">
-    <div class="rank-title">OEE RANKING — ALL MACHINES</div>
+    <div class="rank-title">MACHINE PERFORMANCE RANKING</div>
     <div class="rank-list">${allM.map((m,i)=>{
-      const k=m.kpis,color=k.oee>=85?'var(--green)':k.oee>=65?'var(--yellow)':'var(--red)';
+      const k=m.kpis;
+      const score=r1(((100-(k.downtime/TARGETS.downtime*100))+(100-(k.setup/TARGETS.setup*100)))/2);
+      const color=score>=85?'var(--green)':score>=65?'var(--yellow)':'var(--red)';
       const isPrimary=m.dept.toLowerCase().includes('primary');
       return `<div class="rank-row ${i===0?'gold':''}">
         <div class="${i<3?'rank-medal':'rank-pos'}">${i<3?medals[i]:(i+1)}</div>
         <div class="rank-machine">${m.name}</div>
         <div class="rank-dept-tag ${isPrimary?'primary':'finishing'}">${isPrimary?'PRIMARY':'FINISHING'}</div>
-        <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${Math.min(k.oee,100)}%;background:${color}"></div></div>
-        <div class="rank-oee" style="color:${color}">${k.oee}%</div>
+        <div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${Math.min(score,100)}%;background:${color}"></div></div>
+        <div class="rank-oee" style="color:${color}">${score}%</div>
       </div>`;
     }).join('')}</div>
   </div>`;
@@ -576,16 +610,16 @@ function renderRankingSlide(){
 /* ═══ GOALS SLIDE ═══ */
 function renderGoalsSlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
-  allM.sort((a,b)=>{const aP=a.dept.toLowerCase().includes('primary')?0:1;const bP=b.dept.toLowerCase().includes('primary')?0:1;return aP-bP||b.kpis.oee-a.kpis.oee;});
+  allM.sort((a,b)=>{const aP=a.dept.toLowerCase().includes('primary')?0:1;const bP=b.dept.toLowerCase().includes('primary')?0:1;return aP-bP;});
   return `<div class="goals-slide-inner">
     <div class="goals-title">Q1 2026 — QUARTER GOALS PROGRESS</div>
     <div class="goals-grid">${allM.map(m=>{
       const k=m.kpis;
       const goals=[
-        {label:'OEE',current:k.oee,target:Q_GOALS.oee,inv:false},
         {label:'DT%',current:k.downtime,target:Q_GOALS.downtime,inv:true},
-        {label:'UTIL',current:k.utilization,target:Q_GOALS.utilization,inv:false},
-        {label:'EFF',current:k.efficiency,target:Q_GOALS.efficiency,inv:false},
+        {label:'SETUP',current:k.setup,target:Q_GOALS.setup,inv:true},
+        {label:'FEEDS/RUN',current:k.feedsRunHr,target:Q_GOALS.feedsRunHr,inv:false},
+        {label:'FEEDS/SCH',current:k.feedsSchHr,target:Q_GOALS.feedsSchHr,inv:false},
       ];
       return `<div class="goal-card">
         <div class="goal-card-name">${m.name}</div>
