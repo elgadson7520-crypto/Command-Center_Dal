@@ -10,7 +10,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <!-- AUTO-RECOVERY: Reload page every 10 minutes as a fallback safety net -->
 <meta http-equiv="refresh" content="600">
-<title>SupplyOne Dallas — Weekly PEFS Command Center</title>
+<title>SupplyOne OKC — Weekly PEFS Command Center</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap');
@@ -368,7 +368,7 @@ body.cursor-hidden{cursor:none}
 
 <div class="tap-overlay" id="tapOverlay">
   <div class="tap-ring"><div class="tap-ring-inner">&#9654;</div></div>
-  <h2>SUPPLYONE DALLAS</h2>
+  <h2>SUPPLYONE OKC</h2>
   <p>TAP ANYWHERE TO START DISPLAY</p>
 </div>
 
@@ -392,14 +392,14 @@ body.cursor-hidden{cursor:none}
 </div>
 
 <div id="uploadScreen">
-  <div class="logo-area"><h1>SUPPLY<b>ONE</b></h1><p>Dallas &mdash; Weekly PEFS Command Center</p></div>
+  <div class="logo-area"><h1>SUPPLY<b>ONE</b></h1><p>OKC &mdash; Weekly PEFS Command Center</p></div>
   <div class="mode-tabs">
     <button class="mode-tab active" onclick="switchMode('sheets')" id="tabSheets">&#9729; Google Sheets</button>
     <button class="mode-tab" onclick="switchMode('file')" id="tabFile">&#128193; File Upload</button>
   </div>
   <div class="gs-panel active" id="gsPanel">
     <h2>CONNECT PEFS REPORT</h2>
-    <div class="gs-steps"><ol><li>Open your PEFS report in <b>Google Sheets</b></li><li>Go to <code>File → Share → Publish to web</code></li><li>Select <b>"Entire Document"</b> and format <b>".xlsx"</b></li><li>Click <b>Publish</b>, then paste the URL below</li></ol></div>
+    <div class="gs-steps"><ol><li>Open your PEFS report in <b>Google Sheets</b></li><li>Go to <code>File &rarr; Share &rarr; Publish to web</code></li><li>Select <b>"Entire Document"</b> and format <b>".xlsx"</b></li><li>Click <b>Publish</b>, then paste the URL below</li></ol></div>
     <div class="gs-url-row"><input type="text" id="gsUrl" placeholder="Paste published Google Sheets URL here..."/><button class="gs-connect-btn" id="gsConnectBtn" onclick="connectGoogleSheets()">CONNECT &amp; GO LIVE</button></div>
     <div class="gs-status" id="gsStatus"><div class="dot"></div><span id="gsStatusText">Connected</span></div>
     <span class="saved-tag" id="savedTag">&#10003; URL saved</span>
@@ -439,7 +439,7 @@ body.cursor-hidden{cursor:none}
 <div class="ctrl"><button onclick="goFullscreen()">&#9974;</button><button id="pauseBtn" onclick="togglePause()">&#10074;&#10074;</button><button onclick="prevSlide()">&#9664;</button><button onclick="nextSlide()">&#9654;</button><button onclick="returnToConfig()">&#9881;</button></div>
 
 <script>
-const LS_KEY='so_dallas_pefs_url';
+const LS_KEY='so_okc_pefs_url';
 const TARGETS={downtime:10,setup:25,feedsRunHr:1000,feedsSchHr:800};
 const Q_GOALS={downtime:8,setup:20,feedsRunHr:1200,feedsSchHr:900};
 const TIMING={machine:15000,motive:8000,rank:12000,goals:12000,summary:12000};
@@ -450,7 +450,7 @@ const QUOTES=[
   {text:"Every improvement counts. Every number matters.",sub:"Continuous Improvement never stops."},
   {text:"We don't rise to goals — We rise to our standards.",sub:"Push the standard higher every week."},
   {text:"Downtime is the enemy. Efficiency is the weapon.",sub:"Let's cut waste and maximize output."},
-  {text:"One team. One mission. Zero excuses.",sub:"Dallas sets the pace for SupplyOne."},
+  {text:"One team. One mission. Zero excuses.",sub:"OKC sets the pace for SupplyOne."},
   {text:"Small gains compound into massive results.",sub:"Keep chipping away — the numbers will follow."},
   {text:"The scoreboard doesn't lie.",sub:"Let the data fuel our next breakthrough."},
   {text:"Champions adjust. Adapt. Overcome.",sub:"Every shift is a chance to improve."},
@@ -458,22 +458,16 @@ const QUOTES=[
 ];
 let quoteIdx=0;
 
-/* ═══════════════════════════════════════════════════════
-   BREAK SCHEDULE SYSTEM
-   8:00 AM  → 15 min morning break
-   11:00 AM → 30 min lunch break
-   2:00 PM  → 15 min afternoon break
-   ═══════════════════════════════════════════════════════ */
 const BREAK_SCHEDULE = [
-  { hour:8,  min:0, duration:15, type:'morning',   icon:'☕',  label:'BREAK TIME',         theme:'break-morning',
-    message:'GRAB YOUR COFFEE — RECHARGE AND RESET',
-    messages:['GRAB YOUR COFFEE — RECHARGE AND RESET','STRETCH IT OUT, YOU\'VE EARNED IT','HYDRATE, REFUEL, REFOCUS'] },
-  { hour:11, min:0, duration:30, type:'lunch',      icon:'🍔',  label:'LUNCH BREAK',        theme:'break-lunch',
-    message:'FUEL UP — YOU\'RE HALFWAY THERE',
-    messages:['FUEL UP — YOU\'RE HALFWAY THERE','TIME TO EAT — COME BACK STRONGER','REFUEL AND RECHARGE FOR THE HOME STRETCH'] },
-  { hour:14, min:0, duration:15, type:'afternoon',  icon:'💪',  label:'LAST BREAK',          theme:'break-afternoon',
-    message:'ALMOST THERE — FINISH THE DAY STRONG!',
-    messages:['ALMOST THERE — LET\'S FINISH STRONG!','LAST PUSH — BRING THE ENERGY HOME!','THE FINISH LINE IS IN SIGHT — STRONG CLOSE!'] },
+  { hour:8,  min:0, duration:15, type:'morning',   icon:'\u2615',  label:'BREAK TIME',         theme:'break-morning',
+    message:'GRAB YOUR COFFEE \u2014 RECHARGE AND RESET',
+    messages:['GRAB YOUR COFFEE \u2014 RECHARGE AND RESET','STRETCH IT OUT, YOU\'VE EARNED IT','HYDRATE, REFUEL, REFOCUS'] },
+  { hour:11, min:0, duration:30, type:'lunch',      icon:'\uD83C\uDF54',  label:'LUNCH BREAK',        theme:'break-lunch',
+    message:'FUEL UP \u2014 YOU\'RE HALFWAY THERE',
+    messages:['FUEL UP \u2014 YOU\'RE HALFWAY THERE','TIME TO EAT \u2014 COME BACK STRONGER','REFUEL AND RECHARGE FOR THE HOME STRETCH'] },
+  { hour:14, min:0, duration:15, type:'afternoon',  icon:'\uD83D\uDCAA',  label:'LAST BREAK',          theme:'break-afternoon',
+    message:'ALMOST THERE \u2014 FINISH THE DAY STRONG!',
+    messages:['ALMOST THERE \u2014 LET\'S FINISH STRONG!','LAST PUSH \u2014 BRING THE ENERGY HOME!','THE FINISH LINE IS IN SIGHT \u2014 STRONG CLOSE!'] },
 ];
 
 let breakActive = false;
@@ -481,7 +475,7 @@ let breakEndTime = null;
 let breakTotalMs = 0;
 let breakTickTimer = null;
 let breakConfig = null;
-let lastBreakTriggered = ''; // prevents re-triggering same break
+let lastBreakTriggered = '';
 
 function checkBreakSchedule() {
   if (breakActive) return;
@@ -491,19 +485,16 @@ function checkBreakSchedule() {
 
   for (const b of BREAK_SCHEDULE) {
     const key = dayKey + '-' + b.hour;
-    // Trigger if we're within the first 30 seconds of the break start time
     if (h === b.hour && m === b.min && now.getSeconds() < 30 && lastBreakTriggered !== key) {
       lastBreakTriggered = key;
       startBreak(b);
       return;
     }
-    // Also handle: if the page loads/reloads DURING a break window
     const breakStartMs = new Date(now.getFullYear(), now.getMonth(), now.getDate(), b.hour, b.min, 0).getTime();
     const breakEndMs = breakStartMs + b.duration * 60000;
     const nowMs = now.getTime();
     if (nowMs >= breakStartMs && nowMs < breakEndMs && lastBreakTriggered !== key) {
       lastBreakTriggered = key;
-      // Resume with remaining time
       const remaining = breakEndMs - nowMs;
       startBreak(b, remaining);
       return;
@@ -516,21 +507,13 @@ function startBreak(config, remainingMs) {
   breakConfig = config;
   breakTotalMs = remainingMs || config.duration * 60000;
   breakEndTime = Date.now() + breakTotalMs;
-
-  // Pause dashboard rotation
   clearTimers();
-
   const overlay = document.getElementById('breakOverlay');
   overlay.className = 'active ' + config.theme;
-
-  // Random message
   const msg = config.messages[Math.floor(Math.random() * config.messages.length)];
-
   document.getElementById('breakIcon').textContent = config.icon;
   document.getElementById('breakTypeLabel').textContent = config.label;
   document.getElementById('breakMessage').textContent = msg;
-
-  // Background shapes
   const bg = document.getElementById('breakBg');
   bg.innerHTML = '';
   const colors = config.type === 'morning' ? ['#3b82f6','#60a5fa','#93c5fd'] :
@@ -543,8 +526,6 @@ function startBreak(config, remainingMs) {
     s.style.cssText = `width:${size}vw;height:${size}vw;background:${colors[i%3]};top:${Math.random()*80}%;left:${Math.random()*80}%;animation-delay:${-Math.random()*20}s;animation-duration:${15+Math.random()*15}s`;
     bg.appendChild(s);
   }
-
-  // Start tick
   breakTickTimer = setInterval(tickBreak, 250);
   tickBreak();
 }
@@ -552,32 +533,23 @@ function startBreak(config, remainingMs) {
 function tickBreak() {
   const now = Date.now();
   const remaining = Math.max(0, breakEndTime - now);
-
-  // Update clock
   const d = new Date();
   const h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
   document.getElementById('breakClockTime').textContent = `${h % 12 || 12}:${String(m).padStart(2,'0')}`;
   document.getElementById('breakClockAMPM').textContent = `:${String(s).padStart(2,'0')} ${h >= 12 ? 'PM' : 'AM'}`;
-
-  // Update countdown
   const totalSec = Math.ceil(remaining / 1000);
   const mins = Math.floor(totalSec / 60);
   const secs = totalSec % 60;
   document.getElementById('breakMins').textContent = String(mins).padStart(2, '0');
   document.getElementById('breakSecs').textContent = String(secs).padStart(2, '0');
-
-  // Progress bar (fills left to right as break progresses)
   const elapsed = breakTotalMs - remaining;
   const pct = Math.min(100, (elapsed / breakTotalMs) * 100);
   document.getElementById('breakProgressFill').style.width = pct + '%';
-
-  // Return text
   if (remaining < 60000) {
     document.getElementById('breakReturn').textContent = 'RETURNING TO DASHBOARD IN ' + totalSec + 's...';
   } else {
     document.getElementById('breakReturn').textContent = 'DASHBOARD RESUMES AUTOMATICALLY';
   }
-
   if (remaining <= 0) {
     endBreak();
   }
@@ -587,15 +559,11 @@ function endBreak() {
   breakActive = false;
   clearInterval(breakTickTimer);
   document.getElementById('breakOverlay').className = '';
-  // Resume rotation
   if (slides.length && !isPaused) startRotation();
 }
 
-// Check every second
 setInterval(checkBreakSchedule, 1000);
 
-
-/* ═══ SAMSUNG TV SLEEP PREVENTION ═══ */
 async function requestWakeLock(){try{if('wakeLock' in navigator){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>setTimeout(requestWakeLock,1000));}}catch(e){}}
 function startNoSleepVideo(){const v=document.getElementById('noSleepVideo');if(!v)return;const p=()=>v.play().catch(()=>{});p();setInterval(p,30000);document.addEventListener('click',p);document.addEventListener('touchstart',p);}
 function startActivityPing(){setInterval(()=>{document.title=document.title.endsWith(' ')?document.title.trimEnd():document.title+' ';document.body.style.willChange='auto';requestAnimationFrame(()=>{document.body.style.willChange='';});},25000);}
@@ -603,17 +571,8 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 document.addEventListener('contextmenu',e=>e.preventDefault());
 function initSleep(){requestWakeLock();startNoSleepVideo();startActivityPing();}
 
-/* ═══════════════════════════════════════════════════════
-   AUTO-RECOVERY SYSTEM
-   After power outage or browser crash, the TV's Tizen
-   browser reopens the last URL. These mechanisms ensure
-   the dashboard reconnects automatically with ZERO user
-   interaction required.
-   ═══════════════════════════════════════════════════════ */
-
-// 1) Retry connection on failure with exponential backoff
 let connectionRetries = 0;
-const MAX_RETRIES = 50;  // keep retrying for a long time
+const MAX_RETRIES = 50;
 const BASE_RETRY_MS = 3000;
 
 async function connectWithRetry() {
@@ -632,7 +591,6 @@ async function connectWithRetry() {
       initSleep();
       connectionRetries = 0;
       startGsPolling();
-      // Auto-fullscreen after successful recovery
       setTimeout(() => {
         try {
           const el = document.documentElement;
@@ -645,34 +603,28 @@ async function connectWithRetry() {
       connectionRetries++;
       const delay = Math.min(BASE_RETRY_MS * Math.pow(1.5, connectionRetries), 60000);
       document.getElementById('loadingText').textContent =
-        `Connection failed — retrying in ${Math.round(delay/1000)}s (attempt ${connectionRetries}/${MAX_RETRIES})`;
+        `Connection failed \u2014 retrying in ${Math.round(delay/1000)}s (attempt ${connectionRetries}/${MAX_RETRIES})`;
       await new Promise(r => setTimeout(r, delay));
       document.getElementById('loadingText').textContent = 'Reconnecting to PEFS Data...';
     }
   }
-  // Exhausted retries — reload the whole page as last resort
   document.getElementById('loadingText').textContent = 'Reloading page...';
   setTimeout(() => location.reload(), 3000);
 }
 
-// 2) Detect when network comes back online and re-fetch
 window.addEventListener('online', () => {
   if (parsedData && gsUrl) {
-    // Already have data, just refresh
     refreshGS();
   } else {
-    // Need to reconnect from scratch
     connectionRetries = 0;
     connectWithRetry();
   }
 });
 
-// 3) Detect tab/browser becoming visible again (power restored, TV wakes)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     requestWakeLock();
     startNoSleepVideo();
-    // If dashboard isn't showing, try to reconnect
     if (!parsedData && document.getElementById('gsUrl').value.trim()) {
       connectionRetries = 0;
       connectWithRetry();
@@ -682,7 +634,6 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// 4) Periodic health check — if dashboard should be showing but isn't, recover
 setInterval(() => {
   const dashActive = document.getElementById('dashboard').classList.contains('active');
   if (!dashActive && document.getElementById('gsUrl').value.trim() && isTvMode) {
@@ -696,7 +647,6 @@ function updateClock(){const now=new Date(),h=now.getHours(),m=now.getMinutes();
 setInterval(updateClock,10000);updateClock();
 function switchMode(mode){document.getElementById('tabSheets').classList.toggle('active',mode==='sheets');document.getElementById('tabFile').classList.toggle('active',mode==='file');document.getElementById('gsPanel').classList.toggle('active',mode==='sheets');document.getElementById('filePanel').classList.toggle('active',mode==='file');}
 
-/* ═══ DATA FETCH ═══ */
 function normalizeGsUrl(raw){raw=raw.trim();if(raw.includes('/pub')&&raw.includes('output=xlsx'))return raw;const m=raw.match(/\/d\/([a-zA-Z0-9_-]+)/);if(m)return`https://docs.google.com/spreadsheets/d/${m[1]}/export?format=xlsx`;if(/^[a-zA-Z0-9_-]{20,}$/.test(raw))return`https://docs.google.com/spreadsheets/d/${raw}/export?format=xlsx`;return raw;}
 async function fetchXlsx(url){try{const r=await fetch(url,{redirect:'follow'});if(!r.ok)throw new Error(`HTTP ${r.status}`);return new Uint8Array(await r.arrayBuffer());}catch(e){const r2=await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);if(!r2.ok)throw new Error(`Proxy ${r2.status}`);return new Uint8Array(await r2.arrayBuffer());}}
 
@@ -719,7 +669,7 @@ async function connectGoogleSheets(){
     hideLoading();initSleep();
   }catch(err){
     hideLoading();st.style.display='flex';st.classList.add('error');
-    document.getElementById('gsStatusText').textContent='Failed — '+err.message;
+    document.getElementById('gsStatusText').textContent='Failed \u2014 '+err.message;
   }
   btn.disabled=false;btn.textContent='CONNECT & GO LIVE';
 }
@@ -742,7 +692,6 @@ function hideLoading(){document.getElementById('loadingOverlay').classList.remov
 function goFullscreen(){const el=document.documentElement;(el.requestFullscreen||el.webkitRequestFullscreen).call(el);requestWakeLock();}
 function returnToConfig(){clearTimers();if(gsPollTimer)clearInterval(gsPollTimer);document.getElementById('dashboard').classList.remove('active');document.getElementById('uploadScreen').style.display='flex';}
 
-/* ═══ PARSE PEFS ═══ */
 function processWorkbook(wb){
   let sn=wb.SheetNames[0];for(const n of wb.SheetNames){if(n.toLowerCase().includes('pefs')){sn=n;break;}}
   const ws=wb.Sheets[sn],dateGenStr=cellStr(ws,2,1),dateRangeStr=cellStr(ws,2,11);
@@ -786,7 +735,6 @@ function xRow(ws,row){
 }
 function r1(v){return Math.round(v*10)/10;}
 
-/* ═══ BUILD SLIDE SEQUENCE ═══ */
 function buildSlides(){
   slides=[];if(!parsedData)return;
   const depts=[...parsedData.departments].sort((a,b)=>{const aP=a.name.toLowerCase().includes('primary')?0:1;const bP=b.name.toLowerCase().includes('primary')?0:1;return aP-bP;});
@@ -806,7 +754,6 @@ function buildSlides(){
   slides.push({type:'goals',duration:TIMING.goals});
 }
 
-/* ═══ RENDER DASHBOARD ═══ */
 function renderDashboard(){
   const d=parsedData;
   document.getElementById('uploadScreen').style.display='none';
@@ -829,7 +776,6 @@ function renderDashboard(){
   if(isTvMode)setTimeout(enterTvMode,600);
 }
 
-/* ═══ MACHINE PAIR SLIDE ═══ */
 function renderMachineSlide(s){
   const cls=s.isPrimary?'primary':'finishing';const icon=s.isPrimary?'P':'F';
   const deptName=s.dept.replace(' Department','').toUpperCase();
@@ -856,7 +802,6 @@ function renderMachineSlide(s){
   html+=`</div>`;return html;
 }
 
-/* ═══ MOTIVATIONAL SLIDE ═══ */
 function renderMotiveSlide(s){
   const q=QUOTES[quoteIdx%QUOTES.length];quoteIdx++;
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
@@ -867,7 +812,6 @@ function renderMotiveSlide(s){
   return `<div class="motive-slide"><div class="motive-inner"><div class="motive-emoji">${emo}</div><div class="motive-quote">${q.text}</div><div class="motive-sub">${q.sub}</div>${callout}</div></div>`;
 }
 
-/* ═══ PLANT SUMMARY SLIDE ═══ */
 function renderSummarySlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
   if(!allM.length)return'<div class="summary-slide-inner"><div class="summary-title">NO DATA</div></div>';
@@ -881,10 +825,9 @@ function renderSummarySlide(){
     {label:'MACHINES',val:allM.length,hit:true,vc:'neutral',tag:'Reporting'},
   ];
   const good=allM.filter(m=>m.kpis.downtime<=TARGETS.downtime&&m.kpis.setup<=TARGETS.setup).length;
-  return `<div class="summary-slide-inner"><div class="summary-title">DALLAS PLANT — WEEKLY SUMMARY</div><div class="summary-kpis">${kpis.map(k=>`<div class="summary-kpi ${k.hit?'hit':'miss'}"><div class="summary-kpi-label">${k.label}</div><div class="summary-kpi-val" style="color:var(--${k.vc})">${k.val}</div><div class="summary-kpi-target" style="color:var(--${k.vc})">${k.tag}</div></div>`).join('')}</div><div class="summary-machines">${good} OF ${allM.length} MACHINES ON TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div></div>`;
+  return `<div class="summary-slide-inner"><div class="summary-title">OKC PLANT \u2014 WEEKLY SUMMARY</div><div class="summary-kpis">${kpis.map(k=>`<div class="summary-kpi ${k.hit?'hit':'miss'}"><div class="summary-kpi-label">${k.label}</div><div class="summary-kpi-val" style="color:var(--${k.vc})">${k.val}</div><div class="summary-kpi-target" style="color:var(--${k.vc})">${k.tag}</div></div>`).join('')}</div><div class="summary-machines">${good} OF ${allM.length} MACHINES ON TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div></div>`;
 }
 
-/* ═══ RANKING SLIDE ═══ */
 function renderRankingSlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
   allM.sort((a,b)=>{const aS=a.kpis.downtime+a.kpis.setup/25;const bS=b.kpis.downtime+b.kpis.setup/25;return aS-bS;});
@@ -892,14 +835,12 @@ function renderRankingSlide(){
   return `<div class="rank-slide-inner"><div class="rank-title">MACHINE PERFORMANCE RANKING</div><div class="rank-list">${allM.map((m,i)=>{const k=m.kpis;const score=r1(((100-(k.downtime/TARGETS.downtime*100))+(100-(k.setup/TARGETS.setup*100)))/2);const color=score>=85?'var(--green)':score>=65?'var(--yellow)':'var(--red)';const isPrimary=m.dept.toLowerCase().includes('primary');return`<div class="rank-row ${i===0?'gold':''}"><div class="${i<3?'rank-medal':'rank-pos'}">${i<3?medals[i]:(i+1)}</div><div class="rank-machine">${m.name}</div><div class="rank-dept-tag ${isPrimary?'primary':'finishing'}">${isPrimary?'PRIMARY':'FINISHING'}</div><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:${Math.min(score,100)}%;background:${color}"></div></div><div class="rank-oee" style="color:${color}">${score}%</div></div>`;}).join('')}</div></div>`;
 }
 
-/* ═══ GOALS SLIDE ═══ */
 function renderGoalsSlide(){
   const allM=[];parsedData.departments.forEach(d=>d.machines.forEach(m=>{if(m.kpis)allM.push(m);}));
   allM.sort((a,b)=>{const aP=a.dept.toLowerCase().includes('primary')?0:1;const bP=b.dept.toLowerCase().includes('primary')?0:1;return aP-bP;});
-  return `<div class="goals-slide-inner"><div class="goals-title">Q1 2026 — QUARTER GOALS PROGRESS</div><div class="goals-grid">${allM.map(m=>{const k=m.kpis;const goals=[{label:'DT%',current:k.downtime,target:Q_GOALS.downtime,inv:true},{label:'SETUP',current:k.setup,target:Q_GOALS.setup,inv:true},{label:'FEEDS/RUN',current:k.feedsRunHr,target:Q_GOALS.feedsRunHr,inv:false},{label:'FEEDS/SCH',current:k.feedsSchHr,target:Q_GOALS.feedsSchHr,inv:false}];return`<div class="goal-card"><div class="goal-card-name">${m.name}</div><div class="goal-card-rows">${goals.map(g=>{let pct;if(g.inv){pct=g.current<=g.target?100:Math.max(0,Math.round((1-(g.current-g.target)/g.target)*100));}else{pct=g.target>0?Math.min(100,Math.round((g.current/g.target)*100)):0;}const cls=pct>=95?'good':pct>=70?'warn':'bad';return`<div class="goal-r"><div class="goal-r-label">${g.label}</div><div class="goal-r-bar"><div class="goal-r-fill ${cls}" style="width:${pct}%"></div></div><div class="goal-r-pct" style="color:var(--${cls})">${pct}%</div></div>`;}).join('')}</div></div>`;}).join('')}</div></div>`;
+  return `<div class="goals-slide-inner"><div class="goals-title">Q1 2026 \u2014 QUARTER GOALS PROGRESS</div><div class="goals-grid">${allM.map(m=>{const k=m.kpis;const goals=[{label:'DT%',current:k.downtime,target:Q_GOALS.downtime,inv:true},{label:'SETUP',current:k.setup,target:Q_GOALS.setup,inv:true},{label:'FEEDS/RUN',current:k.feedsRunHr,target:Q_GOALS.feedsRunHr,inv:false},{label:'FEEDS/SCH',current:k.feedsSchHr,target:Q_GOALS.feedsSchHr,inv:false}];return`<div class="goal-card"><div class="goal-card-name">${m.name}</div><div class="goal-card-rows">${goals.map(g=>{let pct;if(g.inv){pct=g.current<=g.target?100:Math.max(0,Math.round((1-(g.current-g.target)/g.target)*100));}else{pct=g.target>0?Math.min(100,Math.round((g.current/g.target)*100)):0;}const cls=pct>=95?'good':pct>=70?'warn':'bad';return`<div class="goal-r"><div class="goal-r-label">${g.label}</div><div class="goal-r-bar"><div class="goal-r-fill ${cls}" style="width:${pct}%"></div></div><div class="goal-r-pct" style="color:var(--${cls})">${pct}%</div></div>`;}).join('')}</div></div>`;}).join('')}</div></div>`;
 }
 
-/* ═══ SLIDE ROTATION ENGINE ═══ */
 function showSlide(idx){curSlide=idx;document.querySelectorAll('.slide').forEach((s,i)=>s.classList.toggle('active',i===idx));document.querySelectorAll('.pdot').forEach((d,i)=>d.classList.toggle('active',i===idx));}
 function goToSlide(i){clearTimers();showSlide(i);startRotation();}
 function nextSlide(){clearTimers();curSlide=(curSlide+1)%slides.length;showSlide(curSlide);startRotation();}
@@ -914,8 +855,8 @@ function clearTimers(){clearTimeout(rotateTimer);clearInterval(progressTimer);do
 function togglePause(){isPaused=!isPaused;document.getElementById('pauseBtn').innerHTML=isPaused?'\u25B6':'\u23F8';isPaused?clearTimers():startRotation();}
 document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')nextSlide();else if(e.key==='ArrowLeft')prevSlide();else if(e.key===' '){e.preventDefault();togglePause();}});
 
-/* ═══ AUTO INIT — HARDCODED FOR DALLAS TV ═══ */
-const HARDCODED_GS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR3rSZ5MJC4R-S1pqWwlPTIEIgguiaBzWLp6BGPzZL4EJQYRGpfBgH7lfqKXd1g_lQg1-pt7COXMOHK/pub?output=xlsx';
+/* ═══ AUTO INIT — HARDCODED FOR OKC TV ═══ */
+const HARDCODED_GS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSDlI3RZFhTv0b40Qs03svq_UmDTaH-EIO4HqKGP_OgaFh7RPRbSKDBwiqXYYYnSBzARixhmUlkBP2v/pub?output=xlsx';
 let isTvMode = false;
 (function(){
   const params = new URLSearchParams(location.search);
@@ -923,19 +864,16 @@ let isTvMode = false;
   const urlToUse = gsParam || localStorage.getItem(LS_KEY) || HARDCODED_GS_URL;
   document.getElementById('gsUrl').value = urlToUse;
 
-  // TV mode: auto-start with retry logic for power recovery
   const autostart = params.get('autostart') === '1' || (!gsParam && urlToUse === HARDCODED_GS_URL) || localStorage.getItem(LS_KEY);
   if(urlToUse && autostart){
     isTvMode = true;
     document.getElementById('uploadScreen').style.display='none';
-    // Use retry-enabled connect instead of plain connectGoogleSheets
     setTimeout(() => connectWithRetry(), 300);
   } else if(urlToUse){
     document.getElementById('savedTag').style.display='inline';
   }
 })();
 
-/* ═══ TV DISPLAY MODE ═══ */
 function enterTvMode(){
   document.body.classList.add('tv-mode');
   const overlay = document.getElementById('tapOverlay');
@@ -947,11 +885,9 @@ function enterTvMode(){
     else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
     overlay.removeEventListener('click', handler);
   });
-  // Auto-dismiss after 5s for unattended TV (no tap needed)
   setTimeout(()=>{ overlay.classList.remove('active'); }, 5000);
 }
 
-/* ═══ CURSOR HIDE ═══ */
 let cursorTimer;
 document.addEventListener('mousemove',()=>{document.body.classList.remove('cursor-hidden');clearTimeout(cursorTimer);cursorTimer=setTimeout(()=>document.body.classList.add('cursor-hidden'),3000);});
 </script>
