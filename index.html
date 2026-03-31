@@ -10,7 +10,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <!-- AUTO-RECOVERY: Reload page every 10 minutes as a fallback safety net -->
 <meta http-equiv="refresh" content="600">
-<title>SupplyOne OKC — Weekly PEFS Command Center</title>
+<title>SupplyOne DAL — Weekly PEFS Command Center</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap');
@@ -368,7 +368,7 @@ body.cursor-hidden{cursor:none}
 
 <div class="tap-overlay" id="tapOverlay">
   <div class="tap-ring"><div class="tap-ring-inner">&#9654;</div></div>
-  <h2>SUPPLYONE OKC</h2>
+  <h2>SUPPLYONE DAL</h2>
   <p>TAP ANYWHERE TO START DISPLAY</p>
 </div>
 
@@ -392,7 +392,7 @@ body.cursor-hidden{cursor:none}
 </div>
 
 <div id="uploadScreen">
-  <div class="logo-area"><h1>SUPPLY<b>ONE</b></h1><p>OKC &mdash; Weekly PEFS Command Center</p></div>
+  <div class="logo-area"><h1>SUPPLY<b>ONE</b></h1><p>DAL &mdash; Weekly PEFS Command Center</p></div>
   <div class="mode-tabs">
     <button class="mode-tab active" onclick="switchMode('sheets')" id="tabSheets">&#9729; Google Sheets</button>
     <button class="mode-tab" onclick="switchMode('file')" id="tabFile">&#128193; File Upload</button>
@@ -439,7 +439,7 @@ body.cursor-hidden{cursor:none}
 <div class="ctrl"><button onclick="goFullscreen()">&#9974;</button><button id="pauseBtn" onclick="togglePause()">&#10074;&#10074;</button><button onclick="prevSlide()">&#9664;</button><button onclick="nextSlide()">&#9654;</button><button onclick="returnToConfig()">&#9881;</button></div>
 
 <script>
-const LS_KEY='so_okc_pefs_url';
+const LS_KEY='so_dal_pefs_url';
 const TARGETS={downtime:10,setup:25,feedsRunHr:1000,feedsSchHr:800};
 const Q_GOALS={downtime:8,setup:20,feedsRunHr:1200,feedsSchHr:900};
 const TIMING={machine:15000,motive:8000,rank:12000,goals:12000,summary:12000};
@@ -450,7 +450,7 @@ const QUOTES=[
   {text:"Every improvement counts. Every number matters.",sub:"Continuous Improvement never stops."},
   {text:"We don't rise to goals — We rise to our standards.",sub:"Push the standard higher every week."},
   {text:"Downtime is the enemy. Efficiency is the weapon.",sub:"Let's cut waste and maximize output."},
-  {text:"One team. One mission. Zero excuses.",sub:"OKC sets the pace for SupplyOne."},
+  {text:"One team. One mission. Zero excuses.",sub:"DAL sets the pace for SupplyOne."},
   {text:"Small gains compound into massive results.",sub:"Keep chipping away — the numbers will follow."},
   {text:"The scoreboard doesn't lie.",sub:"Let the data fuel our next breakthrough."},
   {text:"Champions adjust. Adapt. Overcome.",sub:"Every shift is a chance to improve."},
@@ -825,7 +825,7 @@ function renderSummarySlide(){
     {label:'MACHINES',val:allM.length,hit:true,vc:'neutral',tag:'Reporting'},
   ];
   const good=allM.filter(m=>m.kpis.downtime<=TARGETS.downtime&&m.kpis.setup<=TARGETS.setup).length;
-  return `<div class="summary-slide-inner"><div class="summary-title">OKC PLANT \u2014 WEEKLY SUMMARY</div><div class="summary-kpis">${kpis.map(k=>`<div class="summary-kpi ${k.hit?'hit':'miss'}"><div class="summary-kpi-label">${k.label}</div><div class="summary-kpi-val" style="color:var(--${k.vc})">${k.val}</div><div class="summary-kpi-target" style="color:var(--${k.vc})">${k.tag}</div></div>`).join('')}</div><div class="summary-machines">${good} OF ${allM.length} MACHINES ON TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div></div>`;
+  return `<div class="summary-slide-inner"><div class="summary-title">DAL PLANT \u2014 WEEKLY SUMMARY</div><div class="summary-kpis">${kpis.map(k=>`<div class="summary-kpi ${k.hit?'hit':'miss'}"><div class="summary-kpi-label">${k.label}</div><div class="summary-kpi-val" style="color:var(--${k.vc})">${k.val}</div><div class="summary-kpi-target" style="color:var(--${k.vc})">${k.tag}</div></div>`).join('')}</div><div class="summary-machines">${good} OF ${allM.length} MACHINES ON TARGET &nbsp;&bull;&nbsp; ${allM.length} MACHINES REPORTING</div></div>`;
 }
 
 function renderRankingSlide(){
@@ -855,8 +855,8 @@ function clearTimers(){clearTimeout(rotateTimer);clearInterval(progressTimer);do
 function togglePause(){isPaused=!isPaused;document.getElementById('pauseBtn').innerHTML=isPaused?'\u25B6':'\u23F8';isPaused?clearTimers():startRotation();}
 document.addEventListener('keydown',e=>{if(e.key==='ArrowRight')nextSlide();else if(e.key==='ArrowLeft')prevSlide();else if(e.key===' '){e.preventDefault();togglePause();}});
 
-/* ═══ AUTO INIT — HARDCODED FOR OKC TV ═══ */
-const HARDCODED_GS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSDlI3RZFhTv0b40Qs03svq_UmDTaH-EIO4HqKGP_OgaFh7RPRbSKDBwiqXYYYnSBzARixhmUlkBP2v/pub?output=xlsx';
+/* ═══ AUTO INIT — HARDCODED FOR DAL TV ═══ */
+const HARDCODED_GS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTsMLsU_U5_V1Cpb03Kj1DHvK5k9jmPCebjBCK4aR6z-glJqTglamBjxXuh8eHQVNj44JyelwBO-FlP/pub?output=xlsx';
 let isTvMode = false;
 (function(){
   const params = new URLSearchParams(location.search);
